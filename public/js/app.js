@@ -315,7 +315,13 @@ window.addEventListener('popstate', renderRoute);
 quickMake.addEventListener('change', () => {
   refreshYearOptions().catch((error) => showMessage(error.message));
 });
+quickMake.addEventListener('input', () => {
+  refreshYearOptions().catch((error) => showMessage(error.message));
+});
 quickYear.addEventListener('change', () => {
+  refreshModelOptions().catch((error) => showMessage(error.message));
+});
+quickYear.addEventListener('input', () => {
   refreshModelOptions().catch((error) => showMessage(error.message));
 });
 quickNavForm.addEventListener('submit', (event) => {
