@@ -404,7 +404,7 @@ async function initializeApp() {
 
   await renderRoute();
 
-  if (hydrationErrorMessage) {
+  if (hydrationErrorMessage && !message.textContent) {
     showMessage(hydrationErrorMessage, 'warning');
   }
 }
