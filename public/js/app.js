@@ -211,9 +211,7 @@ async function refreshModelOptions() {
 }
 
 async function renderRoute() {
-  const { decodedParts: parts, make: parsedMake, year: parsedYear, model: parsedModel } = window.routeUtils.parsePathname(
-    window.location.pathname
-  );
+  const { rawParts, decodedParts: parts } = window.routeUtils.parsePathname(window.location.pathname);
   showMessage('');
   showLoading(true);
   content.innerHTML = '';
@@ -292,16 +290,13 @@ async function renderRoute() {
       return;
     }
 
-    const make = parsedMake;
-    const year = parsedYear;
-    const model = parsedModel;
-    setBreadcrumbs([
-      { label: make, path: `/${encodeURIComponent(make)}` },
-      { label: year, path: `/${encodeURIComponent(make)}/${encodeURIComponent(year)}` },
-      { label: model, path: `/${encodeURIComponent(make)}/${encodeURIComponent(year)}/${encodeURIComponent(model)}` }
-    ]);
+    const manualBreadcrumbs = parts.map((label, index) => ({
+      label,
+      path: `/${rawParts.slice(0, index + 1).join('/')}`
+    }));
+    setBreadcrumbs(manualBreadcrumbs);
 
-    const data = await window.lemonApi.getManualPath([make, year, model]);
+    const data = await window.lemonApi.getManualPath(parts);
     const pre = document.createElement('pre');
     pre.className = 'manual-content';
     pre.textContent = JSON.stringify(data, null, 2);
