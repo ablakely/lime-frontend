@@ -305,7 +305,7 @@ async function renderRoute() {
     }));
     setBreadcrumbs(manualBreadcrumbs);
 
-    const data = await window.lemonApi.getManualPath(rawParts, { alreadyEncoded: true });
+    const data = await window.lemonApi.getManualPathFromRawSegments(rawParts);
     const pre = document.createElement('pre');
     pre.className = 'manual-content';
     pre.textContent = JSON.stringify(data, null, 2);
