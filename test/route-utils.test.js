@@ -31,3 +31,21 @@ test('parsePathname supports deeper manual paths', () => {
   assert.equal(parsed.year, '2012');
   assert.equal(parsed.model, 'LaCrosse/Repair and Diagnosis');
 });
+
+test('parsePathname preserves deep encoded segments for manual navigation', () => {
+  const parsed = parsePathname(
+    '/GMC/1998/Cab%20%26%20Chassis%20C3500%2C%202D%20Pickup%2C%206.5%20F%2C%20Automatic/Repair%20and%20Diagnosis/'
+  );
+  assert.deepEqual(parsed.rawParts, [
+    'GMC',
+    '1998',
+    'Cab%20%26%20Chassis%20C3500%2C%202D%20Pickup%2C%206.5%20F%2C%20Automatic',
+    'Repair%20and%20Diagnosis'
+  ]);
+  assert.deepEqual(parsed.decodedParts, [
+    'GMC',
+    '1998',
+    'Cab & Chassis C3500, 2D Pickup, 6.5 F, Automatic',
+    'Repair and Diagnosis'
+  ]);
+});
