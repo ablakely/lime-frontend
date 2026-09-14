@@ -16,6 +16,6 @@ window.lemonApi = {
   getModels: (make, year) => fetchJson(`/api/${encodeURIComponent(make)}/${encodeURIComponent(year)}`),
   getManual: (make, year, model) =>
     fetchJson(`/api/${encodeURIComponent(make)}/${encodeURIComponent(year)}/${encodeURIComponent(model)}`),
-  getManualPath: (segments) =>
-    fetchJson(`/api/manual/${segments.map((segment) => encodeURIComponent(segment)).join('/')}`)
+  getManualPath: (segments) => fetchJson(`/api/manual/${segments.map((segment) => encodeURIComponent(segment)).join('/')}`),
+  getManualPathFromRawSegments: (rawSegments) => fetchJson(`/api/manual/${rawSegments.join('/')}`)
 };

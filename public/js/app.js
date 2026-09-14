@@ -11,6 +11,7 @@ const yearOptions = document.getElementById('year-options');
 const modelOptions = document.getElementById('model-options');
 
 let cachedMakes = [];
+let makesHydrationPromise = null;
 
 function showLoading(show) {
   loading.classList.toggle('d-none', !show);
@@ -89,20 +90,19 @@ function cardList(items) {
 }
 
 function normalizeArrayPayload(data) {
+  if (!data || typeof data !== 'object') {
+    return [];
+  }
+
   if (Array.isArray(data)) {
     return data;
   }
 
-  if (Array.isArray(data.makes)) {
-    return data.makes;
-  }
-
-  if (Array.isArray(data.years)) {
-    return data.years;
-  }
-
-  if (Array.isArray(data.models)) {
-    return data.models;
+  const candidates = ['makes', 'years', 'models', 'items', 'results', 'data'];
+  for (const key of candidates) {
+    if (Array.isArray(data[key])) {
+      return data[key];
+    }
   }
 
   return [];
@@ -123,7 +123,17 @@ function fillDataList(element, values) {
 
 function extractMakes(data) {
   return normalizeArrayPayload(data)
-    .map((make) => (typeof make === 'string' ? make : make.make))
+    .map((make) => {
+      if (typeof make === 'string') {
+        return make;
+      }
+
+      if (!make || typeof make !== 'object') {
+        return '';
+      }
+
+      return make.make || make.name || make.label || make.value || '';
+    })
     .filter(Boolean);
 }
 
@@ -161,12 +171,27 @@ function extractModels(data) {
 }
 
 async function hydrateMakesIfNeeded() {
-  if (cachedMakes.length > 0) {
+  if (cachedMakes.length > 0 && makeOptions.childElementCount > 0) {
     return cachedMakes;
   }
-  cachedMakes = extractMakes(await window.lemonApi.getMakes());
-  fillDataList(makeOptions, cachedMakes);
-  return cachedMakes;
+
+  if (!makesHydrationPromise) {
+    makesHydrationPromise = (async () => {
+      try {
+        cachedMakes = extractMakes(await window.lemonApi.getMakes());
+        fillDataList(makeOptions, cachedMakes);
+        return cachedMakes;
+      } catch (error) {
+        cachedMakes = [];
+        clearDataList(makeOptions);
+        throw new Error(`Unable to load makes for autocomplete. ${error.message}`);
+      } finally {
+        makesHydrationPromise = null;
+      }
+    })();
+  }
+
+  return makesHydrationPromise;
 }
 
 async function refreshYearOptions() {
@@ -195,9 +220,7 @@ async function refreshModelOptions() {
 }
 
 async function renderRoute() {
-  const { decodedParts: parts, make: parsedMake, year: parsedYear, model: parsedModel } = window.routeUtils.parsePathname(
-    window.location.pathname
-  );
+  const { rawParts, decodedParts: parts } = window.routeUtils.parsePathname(window.location.pathname);
   showMessage('');
   showLoading(true);
   content.innerHTML = '';
@@ -205,12 +228,7 @@ async function renderRoute() {
   try {
     if (parts.length === 0) {
       setBreadcrumbs([]);
-      const data = await window.lemonApi.getMakes();
-      const makes = extractMakes(data).map((make) => ({ make }));
-      if (cachedMakes.length === 0) {
-        cachedMakes = makes.map(({ make }) => make);
-        fillDataList(makeOptions, cachedMakes);
-      }
+      const makes = (await hydrateMakesIfNeeded()).map((make) => ({ make }));
       content.appendChild(
         cardList(
           makes.map(({ make }) => ({
@@ -281,16 +299,13 @@ async function renderRoute() {
       return;
     }
 
-    const make = parsedMake;
-    const year = parsedYear;
-    const model = parsedModel;
-    setBreadcrumbs([
-      { label: make, path: `/${encodeURIComponent(make)}` },
-      { label: year, path: `/${encodeURIComponent(make)}/${encodeURIComponent(year)}` },
-      { label: model, path: `/${encodeURIComponent(make)}/${encodeURIComponent(year)}/${encodeURIComponent(model)}` }
-    ]);
+    const manualBreadcrumbs = parts.map((label, index) => ({
+      label,
+      path: `/${rawParts.slice(0, index + 1).join('/')}`
+    }));
+    setBreadcrumbs(manualBreadcrumbs);
 
-    const data = await window.lemonApi.getManualPath([make, year, model]);
+    const data = await window.lemonApi.getManualPathFromRawSegments(rawParts);
     const pre = document.createElement('pre');
     pre.className = 'manual-content';
     pre.textContent = JSON.stringify(data, null, 2);
@@ -379,5 +394,19 @@ quickNavForm.addEventListener('submit', (event) => {
   renderRoute();
 });
 
-hydrateMakesIfNeeded().catch((error) => showMessage(error.message));
-renderRoute();
+async function initializeApp() {
+  let hydrationErrorMessage = '';
+  try {
+    await hydrateMakesIfNeeded();
+  } catch (error) {
+    hydrationErrorMessage = error.message;
+  }
+
+  await renderRoute();
+
+  if (hydrationErrorMessage && !message.textContent) {
+    showMessage(hydrationErrorMessage, 'warning');
+  }
+}
+
+initializeApp();
