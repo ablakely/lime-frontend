@@ -11,6 +11,7 @@ const yearOptions = document.getElementById('year-options');
 const modelOptions = document.getElementById('model-options');
 
 let cachedMakes = [];
+let makesHydrationPromise = null;
 
 function showLoading(show) {
   loading.classList.toggle('d-none', !show);
@@ -174,15 +175,23 @@ async function hydrateMakesIfNeeded() {
     return cachedMakes;
   }
 
-  try {
-    cachedMakes = extractMakes(await window.lemonApi.getMakes());
-    fillDataList(makeOptions, cachedMakes);
-    return cachedMakes;
-  } catch (error) {
-    cachedMakes = [];
-    clearDataList(makeOptions);
-    throw new Error(`Unable to load makes for autocomplete. ${error.message}`);
+  if (!makesHydrationPromise) {
+    makesHydrationPromise = (async () => {
+      try {
+        cachedMakes = extractMakes(await window.lemonApi.getMakes());
+        fillDataList(makeOptions, cachedMakes);
+        return cachedMakes;
+      } catch (error) {
+        cachedMakes = [];
+        clearDataList(makeOptions);
+        throw new Error(`Unable to load makes for autocomplete. ${error.message}`);
+      } finally {
+        makesHydrationPromise = null;
+      }
+    })();
   }
+
+  return makesHydrationPromise;
 }
 
 async function refreshYearOptions() {
@@ -296,7 +305,7 @@ async function renderRoute() {
     }));
     setBreadcrumbs(manualBreadcrumbs);
 
-    const data = await window.lemonApi.getManualRawPath(rawParts);
+    const data = await window.lemonApi.getManualPath(rawParts, { alreadyEncoded: true });
     const pre = document.createElement('pre');
     pre.className = 'manual-content';
     pre.textContent = JSON.stringify(data, null, 2);
