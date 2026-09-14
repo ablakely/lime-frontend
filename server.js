@@ -30,6 +30,30 @@ function normalizeBaseUrl(rawUrl) {
   return url.toString();
 }
 
+function normalizeUpstreamPath(pathname) {
+  const rawPath = String(pathname || '/');
+  const hasTrailingSlash = rawPath.endsWith('/');
+  const normalizedSegments = rawPath
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => {
+      const decoded = decodeURIComponent(segment);
+
+      if (decoded === '.' || decoded === '..') {
+        throw new TypeError('Invalid LEMON API path segment.');
+      }
+
+      return encodeURIComponent(decoded);
+    });
+
+  if (normalizedSegments.length === 0) {
+    return '/';
+  }
+
+  const normalizedPath = `/${normalizedSegments.join('/')}`;
+  return hasTrailingSlash ? `${normalizedPath}/` : normalizedPath;
+}
+
 function resolveLemonApiConfig(env = process.env) {
   const lemonApiUrl = env.LEMON_API_URL && env.LEMON_API_URL.trim();
   const legacyApiBaseUrl = env.API_BASE_URL && env.API_BASE_URL.trim();
@@ -78,9 +102,10 @@ function lemonUrl(pathname, config = LEMON_API_CONFIG) {
     throw new Error('LEMON API base URL is not configured.');
   }
 
-  const baseUrl = config.baseUrl.endsWith('/') ? config.baseUrl : `${config.baseUrl}/`;
-  const normalizedPath = String(pathname || '/').replace(/^\/+/, '');
-  return new URL(normalizedPath, baseUrl).toString();
+  const baseUrl = new URL(config.baseUrl.endsWith('/') ? config.baseUrl : `${config.baseUrl}/`);
+  const normalizedPath = normalizeUpstreamPath(pathname);
+  baseUrl.pathname = `${baseUrl.pathname.replace(/\/$/, '')}${normalizedPath}`;
+  return baseUrl.toString();
 }
 
 function logProxyFailure(kind, pathname, config, error, targetUrl) {
@@ -112,9 +137,10 @@ async function proxyJson(res, pathname) {
     return sendConfigError(res);
   }
 
-  const targetUrl = lemonUrl(pathname);
+  let targetUrl = null;
 
   try {
+    targetUrl = lemonUrl(pathname);
     const response = await fetch(targetUrl, {
       headers: { Accept: 'application/json' }
     });
@@ -148,9 +174,10 @@ async function proxyManual(res, pathname) {
     return sendConfigError(res);
   }
 
-  const targetUrl = lemonUrl(pathname);
+  let targetUrl = null;
 
   try {
+    targetUrl = lemonUrl(pathname);
     const response = await fetch(targetUrl, {
       headers: { Accept: 'text/html, application/json' }
     });

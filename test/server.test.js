@@ -142,6 +142,17 @@ test('resolveLemonApiConfig falls back to API_BASE_URL for compatibility', () =>
   assert.equal(lemonUrl('/makes'), 'https://legacy.example/api/makes');
 });
 
+test('lemonUrl treats user input as path segments instead of allowing absolute URL overrides', () => {
+  const { lemonUrl } = loadServer({
+    LEMON_API_URL: 'https://lemon.example/manuals/'
+  });
+
+  assert.equal(
+    lemonUrl('https://evil.example/steal'),
+    'https://lemon.example/manuals/https%3A/evil.example/steal'
+  );
+});
+
 test('manual api route returns a friendly error and logs diagnostics when upstream fetch fails', async (t) => {
   const errorLogs = [];
   const originalConsoleError = console.error;
