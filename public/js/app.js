@@ -195,7 +195,8 @@ async function refreshModelOptions() {
 }
 
 async function renderRoute() {
-  const parts = window.location.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+  const rawParts = window.location.pathname.split('/').filter(Boolean);
+  const parts = rawParts.map((part) => decodeURIComponent(part));
   showMessage('');
   showLoading(true);
   content.innerHTML = '';
@@ -279,8 +280,9 @@ async function renderRoute() {
       return;
     }
 
-    const [make, year, ...modelParts] = parts;
-    const model = modelParts.join('/');
+    const make = decodeURIComponent(rawParts[0] || '');
+    const year = decodeURIComponent(rawParts[1] || '');
+    const model = rawParts.slice(2).map((part) => decodeURIComponent(part)).join('/');
     setBreadcrumbs([
       { label: make, path: `/${encodeURIComponent(make)}` },
       { label: year, path: `/${encodeURIComponent(make)}/${encodeURIComponent(year)}` },
