@@ -277,11 +277,13 @@ async function renderRoute() {
 
         if (entry.model && Array.isArray(entry.engines) && entry.engines.length > 0) {
           entry.engines.forEach((engine) => {
-            const modelName = engine.name || entry.model;
+            const subtitle = engine.name || entry.model;
+            const title = entry.model !== subtitle ? entry.model : ''; 
+
             modelCards.push({
-              title: modelName,
-              subtitle: entry.model !== modelName ? entry.model : '',
-              href: `/${encodeURIComponent(make)}/${encodeURIComponent(year)}/${encodeURIComponent(modelName)}`
+              subtitle: subtitle,
+              title: title,
+              href: `/${encodeURIComponent(make)}/${encodeURIComponent(year)}/${encodeURIComponent(title + ' ' + subtitle)}`
             });
           });
           return;
