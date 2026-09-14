@@ -46,6 +46,46 @@ async function proxyJson(res, pathname) {
   }
 }
 
+async function proxyManual(res, pathname) {
+  try {
+    const response = await fetch(lemonUrl(pathname), {
+      headers: { Accept: 'text/html, application/json' }
+    });
+    const contentType = response.headers.get('content-type') || '';
+    const body = await response.text();
+
+    if (!response.ok) {
+      if (contentType.includes('application/json')) {
+        try {
+          const data = JSON.parse(body);
+          return res.status(response.status).json({
+            error: data.error || `LEMON API request failed (${response.status})`,
+            details: data.details || response.statusText
+          });
+        } catch (_error) {
+          // Fall through to text error payload.
+        }
+      }
+
+      return res.status(response.status).json({
+        error: `LEMON API request failed (${response.status})`,
+        details: body || response.statusText
+      });
+    }
+
+    if (contentType.includes('application/json')) {
+      return res.type('application/json').send(body);
+    }
+
+    return res.type(contentType || 'text/html').send(body);
+  } catch (error) {
+    return res.status(502).json({
+      error: 'Unable to connect to LEMON API',
+      details: error.message
+    });
+  }
+}
+
 app.get('/api/makes', async (_req, res) => proxyJson(res, '/'));
 app.get('/api/:make', async (req, res) => proxyJson(res, `/${encodeURIComponent(req.params.make)}/`));
 app.get('/api/:make/:year', async (req, res) =>
@@ -63,14 +103,23 @@ app.get('/api/manual/*path', async (req, res) => {
   const manualPath = requestPath.startsWith(manualPrefix)
     ? requestPath.slice(manualPrefix.length)
     : (Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path);
-  return proxyJson(res, `/${manualPath}`);
+  return proxyManual(res, `/${manualPath}`);
 });
 
 app.get(/^\/(?!api).*/, (_req, res) => {
   res.type('html').send(INDEX_HTML);
 });
 
-app.listen(PORT, () => {
-  console.log(`lime-frontend listening on http://localhost:${PORT}`);
-  console.log(`Proxying LEMON API: ${LEMON_API_URL}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`lime-frontend listening on http://localhost:${PORT}`);
+    console.log(`Proxying LEMON API: ${LEMON_API_URL}`);
+  });
+}
+
+module.exports = {
+  app,
+  lemonUrl,
+  proxyJson,
+  proxyManual
+};
