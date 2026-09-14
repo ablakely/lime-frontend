@@ -89,20 +89,19 @@ function cardList(items) {
 }
 
 function normalizeArrayPayload(data) {
+  if (!data || typeof data !== 'object') {
+    return [];
+  }
+
   if (Array.isArray(data)) {
     return data;
   }
 
-  if (Array.isArray(data.makes)) {
-    return data.makes;
-  }
-
-  if (Array.isArray(data.years)) {
-    return data.years;
-  }
-
-  if (Array.isArray(data.models)) {
-    return data.models;
+  const candidates = ['makes', 'years', 'models', 'items', 'results', 'data'];
+  for (const key of candidates) {
+    if (Array.isArray(data[key])) {
+      return data[key];
+    }
   }
 
   return [];
@@ -123,7 +122,17 @@ function fillDataList(element, values) {
 
 function extractMakes(data) {
   return normalizeArrayPayload(data)
-    .map((make) => (typeof make === 'string' ? make : make.make))
+    .map((make) => {
+      if (typeof make === 'string') {
+        return make;
+      }
+
+      if (!make || typeof make !== 'object') {
+        return '';
+      }
+
+      return make.make || make.name || make.label || make.value || '';
+    })
     .filter(Boolean);
 }
 
@@ -161,12 +170,19 @@ function extractModels(data) {
 }
 
 async function hydrateMakesIfNeeded() {
-  if (cachedMakes.length > 0) {
+  if (cachedMakes.length > 0 && makeOptions.childElementCount > 0) {
     return cachedMakes;
   }
-  cachedMakes = extractMakes(await window.lemonApi.getMakes());
-  fillDataList(makeOptions, cachedMakes);
-  return cachedMakes;
+
+  try {
+    cachedMakes = extractMakes(await window.lemonApi.getMakes());
+    fillDataList(makeOptions, cachedMakes);
+    return cachedMakes;
+  } catch (error) {
+    cachedMakes = [];
+    clearDataList(makeOptions);
+    throw new Error(`Unable to load makes for autocomplete. ${error.message}`);
+  }
 }
 
 async function refreshYearOptions() {
@@ -205,12 +221,7 @@ async function renderRoute() {
   try {
     if (parts.length === 0) {
       setBreadcrumbs([]);
-      const data = await window.lemonApi.getMakes();
-      const makes = extractMakes(data).map((make) => ({ make }));
-      if (cachedMakes.length === 0) {
-        cachedMakes = makes.map(({ make }) => make);
-        fillDataList(makeOptions, cachedMakes);
-      }
+      const makes = (await hydrateMakesIfNeeded()).map((make) => ({ make }));
       content.appendChild(
         cardList(
           makes.map(({ make }) => ({
@@ -379,5 +390,19 @@ quickNavForm.addEventListener('submit', (event) => {
   renderRoute();
 });
 
-hydrateMakesIfNeeded().catch((error) => showMessage(error.message));
-renderRoute();
+async function initializeApp() {
+  let hydrationErrorMessage = '';
+  try {
+    await hydrateMakesIfNeeded();
+  } catch (error) {
+    hydrationErrorMessage = error.message;
+  }
+
+  await renderRoute();
+
+  if (hydrationErrorMessage) {
+    showMessage(hydrationErrorMessage, 'warning');
+  }
+}
+
+initializeApp();
