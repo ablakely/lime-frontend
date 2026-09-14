@@ -195,8 +195,9 @@ async function refreshModelOptions() {
 }
 
 async function renderRoute() {
-  const rawParts = window.location.pathname.split('/').filter(Boolean);
-  const parts = rawParts.map((part) => decodeURIComponent(part));
+  const { decodedParts: parts, make: parsedMake, year: parsedYear, model: parsedModel } = window.routeUtils.parsePathname(
+    window.location.pathname
+  );
   showMessage('');
   showLoading(true);
   content.innerHTML = '';
@@ -280,9 +281,9 @@ async function renderRoute() {
       return;
     }
 
-    const make = decodeURIComponent(rawParts[0] || '');
-    const year = decodeURIComponent(rawParts[1] || '');
-    const model = rawParts.slice(2).map((part) => decodeURIComponent(part)).join('/');
+    const make = parsedMake;
+    const year = parsedYear;
+    const model = parsedModel;
     setBreadcrumbs([
       { label: make, path: `/${encodeURIComponent(make)}` },
       { label: year, path: `/${encodeURIComponent(make)}/${encodeURIComponent(year)}` },
@@ -314,18 +315,45 @@ window.addEventListener('click', (event) => {
 
 window.addEventListener('popstate', renderRoute);
 
+function debounce(fn, delayMs = 200) {
+  let debounceTimeoutId = null;
+  return (...args) => {
+    window.clearTimeout(debounceTimeoutId);
+    debounceTimeoutId = window.setTimeout(() => fn(...args), delayMs);
+  };
+}
+
+const refreshYearOptionsOnInput = debounce(() => {
+  const value = quickMake.value.trim();
+  if (!cachedMakes.includes(value)) {
+    clearDataList(yearOptions);
+    clearDataList(modelOptions);
+    quickYear.value = '';
+    quickModel.value = '';
+    return;
+  }
+  refreshYearOptions().catch((error) => showMessage(error.message));
+});
+
+const refreshModelOptionsOnInput = debounce(() => {
+  const selectedYear = quickYear.value.trim();
+  const knownYears = Array.from(yearOptions.querySelectorAll('option')).map((option) => option.value);
+  if (!knownYears.includes(selectedYear)) {
+    clearDataList(modelOptions);
+    quickModel.value = '';
+    return;
+  }
+  refreshModelOptions().catch((error) => showMessage(error.message));
+});
+
 quickMake.addEventListener('change', () => {
   refreshYearOptions().catch((error) => showMessage(error.message));
 });
-quickMake.addEventListener('input', () => {
-  refreshYearOptions().catch((error) => showMessage(error.message));
-});
+quickMake.addEventListener('input', refreshYearOptionsOnInput);
 quickYear.addEventListener('change', () => {
   refreshModelOptions().catch((error) => showMessage(error.message));
 });
-quickYear.addEventListener('input', () => {
-  refreshModelOptions().catch((error) => showMessage(error.message));
-});
+quickYear.addEventListener('input', refreshModelOptionsOnInput);
 quickNavForm.addEventListener('submit', (event) => {
   event.preventDefault();
   const make = quickMake.value.trim();

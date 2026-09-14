@@ -58,8 +58,11 @@ app.get('/api/:make/:year/:model', async (req, res) =>
   )
 );
 app.get('/api/manual/*path', async (req, res) => {
-  const segments = Array.isArray(req.params.path) ? req.params.path : [req.params.path];
-  const manualPath = segments.map((segment) => encodeURIComponent(segment)).join('/');
+  const manualPrefix = '/api/manual/';
+  const requestPath = req.originalUrl.split('?')[0];
+  const manualPath = requestPath.startsWith(manualPrefix)
+    ? requestPath.slice(manualPrefix.length)
+    : (Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path);
   return proxyJson(res, `/${manualPath}`);
 });
 

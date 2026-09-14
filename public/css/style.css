@@ -6,6 +6,16 @@ body {
   text-decoration: none;
 }
 
+.card-list a .card {
+  transition: box-shadow 0.15s ease-in-out, transform 0.15s ease-in-out;
+}
+
+.card-list a:hover .card,
+.card-list a:focus-visible .card {
+  box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.18) !important;
+  transform: translateY(-1px);
+}
+
 .manual-content {
   background: #fff;
   border: 1px solid #dee2e6;
