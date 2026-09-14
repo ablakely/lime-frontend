@@ -4,19 +4,118 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const LEMON_API_URL = (process.env.LEMON_API_URL || 'http://localhost:8080').replace(/\/$/, '');
 const INDEX_HTML = fs.readFileSync(path.join(__dirname, 'public/index.html'), 'utf8');
+const LOCAL_LEMON_API_URL = 'http://localhost:8080';
+const USER_FACING_CONFIG_MESSAGE = 'Set LEMON_API_URL to the LEMON backend base URL for this environment.';
+const USER_FACING_CONNECTIVITY_MESSAGE = 'The manuals service is temporarily unavailable. Please try again later.';
 
 app.use(express.static('public'));
 
-function lemonUrl(pathname) {
-  const normalized = pathname.startsWith('/') ? pathname : `/${pathname}`;
-  return `${LEMON_API_URL}${normalized}`;
+function isLocalDevelopmentEnvironment(env = process.env) {
+  return !env.CI && (env.NODE_ENV || 'development') !== 'production';
+}
+
+function normalizeBaseUrl(rawUrl) {
+  const url = new URL(rawUrl);
+
+  if (!['http:', 'https:'].includes(url.protocol)) {
+    throw new TypeError(`Unsupported LEMON API protocol: ${url.protocol}`);
+  }
+
+  url.hash = '';
+  if (url.pathname !== '/') {
+    url.pathname = url.pathname.replace(/\/+$/, '');
+  }
+
+  return url.toString();
+}
+
+function resolveLemonApiConfig(env = process.env) {
+  const lemonApiUrl = env.LEMON_API_URL && env.LEMON_API_URL.trim();
+  const legacyApiBaseUrl = env.API_BASE_URL && env.API_BASE_URL.trim();
+  const rawUrl = lemonApiUrl || legacyApiBaseUrl || (isLocalDevelopmentEnvironment(env) ? LOCAL_LEMON_API_URL : '');
+  const source = lemonApiUrl ? 'LEMON_API_URL' : legacyApiBaseUrl ? 'API_BASE_URL' : rawUrl ? 'default' : 'missing';
+
+  if (!rawUrl) {
+    return {
+      available: false,
+      source,
+      warning: `LEMON_API_URL is not set. Refusing to default to ${LOCAL_LEMON_API_URL} outside local development.`,
+      userMessage: USER_FACING_CONFIG_MESSAGE
+    };
+  }
+
+  try {
+    const baseUrl = normalizeBaseUrl(rawUrl);
+    let warning = null;
+
+    if (!lemonApiUrl && legacyApiBaseUrl) {
+      warning = 'API_BASE_URL is supported for compatibility, but LEMON_API_URL is the authoritative frontend setting.';
+    } else if (source === 'default') {
+      warning = `LEMON_API_URL is not set. Defaulting to ${LOCAL_LEMON_API_URL} for local development.`;
+    }
+
+    return {
+      available: true,
+      baseUrl,
+      source,
+      warning
+    };
+  } catch (error) {
+    return {
+      available: false,
+      source,
+      warning: `Invalid LEMON API URL from ${source}: ${error.message}`,
+      userMessage: USER_FACING_CONFIG_MESSAGE
+    };
+  }
+}
+
+const LEMON_API_CONFIG = resolveLemonApiConfig();
+
+function lemonUrl(pathname, config = LEMON_API_CONFIG) {
+  if (!config.available || !config.baseUrl) {
+    throw new Error('LEMON API base URL is not configured.');
+  }
+
+  const baseUrl = config.baseUrl.endsWith('/') ? config.baseUrl : `${config.baseUrl}/`;
+  const normalizedPath = String(pathname || '/').replace(/^\/+/, '');
+  return new URL(normalizedPath, baseUrl).toString();
+}
+
+function logProxyFailure(kind, pathname, config, error, targetUrl) {
+  console.error(`[lime-frontend] ${kind}`, {
+    pathname,
+    targetUrl: targetUrl || null,
+    baseUrl: config.baseUrl || null,
+    source: config.source,
+    error: error.message
+  });
+}
+
+function sendConfigError(res) {
+  return res.status(503).json({
+    error: 'LEMON API is not configured',
+    details: USER_FACING_CONFIG_MESSAGE
+  });
+}
+
+function sendConnectivityError(res) {
+  return res.status(502).json({
+    error: 'Unable to reach the LEMON API',
+    details: USER_FACING_CONNECTIVITY_MESSAGE
+  });
 }
 
 async function proxyJson(res, pathname) {
+  if (!LEMON_API_CONFIG.available) {
+    return sendConfigError(res);
+  }
+
+  const targetUrl = lemonUrl(pathname);
+
   try {
-    const response = await fetch(lemonUrl(pathname), {
+    const response = await fetch(targetUrl, {
       headers: { Accept: 'application/json' }
     });
 
@@ -39,16 +138,20 @@ async function proxyJson(res, pathname) {
 
     return res.json(await response.json());
   } catch (error) {
-    return res.status(502).json({
-      error: 'Unable to connect to LEMON API',
-      details: error.message
-    });
+    logProxyFailure('LEMON API request failed', pathname, LEMON_API_CONFIG, error, targetUrl);
+    return sendConnectivityError(res);
   }
 }
 
 async function proxyManual(res, pathname) {
+  if (!LEMON_API_CONFIG.available) {
+    return sendConfigError(res);
+  }
+
+  const targetUrl = lemonUrl(pathname);
+
   try {
-    const response = await fetch(lemonUrl(pathname), {
+    const response = await fetch(targetUrl, {
       headers: { Accept: 'text/html, application/json' }
     });
     const contentType = response.headers.get('content-type') || '';
@@ -79,10 +182,8 @@ async function proxyManual(res, pathname) {
 
     return res.type(contentType || 'text/html').send(body);
   } catch (error) {
-    return res.status(502).json({
-      error: 'Unable to connect to LEMON API',
-      details: error.message
-    });
+    logProxyFailure('LEMON API request failed', pathname, LEMON_API_CONFIG, error, targetUrl);
+    return sendConnectivityError(res);
   }
 }
 
@@ -113,13 +214,20 @@ app.get(/^\/(?!api).*/, (_req, res) => {
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`lime-frontend listening on http://localhost:${PORT}`);
-    console.log(`Proxying LEMON API: ${LEMON_API_URL}`);
+    if (LEMON_API_CONFIG.warning) {
+      console.warn(`[lime-frontend] ${LEMON_API_CONFIG.warning}`);
+    }
+
+    if (LEMON_API_CONFIG.available) {
+      console.log(`Proxying LEMON API: ${LEMON_API_CONFIG.baseUrl}`);
+    }
   });
 }
 
 module.exports = {
   app,
   lemonUrl,
+  resolveLemonApiConfig,
   proxyJson,
   proxyManual
 };
