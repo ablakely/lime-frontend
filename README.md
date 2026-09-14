@@ -21,7 +21,7 @@ App runs at `http://localhost:3000` by default.
 - `/` make list
 - `/:make` year list
 - `/:make/:year` model/engine list
-- `/:make/:year/:model` manual JSON view
+- `/:make/:year/:model` manual listing or manual content view
 
 ## API proxy routes
 

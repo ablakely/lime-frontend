@@ -28,6 +28,16 @@ function showMessage(text, level = 'danger') {
   message.textContent = text;
 }
 
+function decodeHtmlEntities(text) {
+  if (typeof text !== 'string' || !text.includes('&')) {
+    return text || '';
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+}
+
 function setBreadcrumbs(parts) {
   breadcrumbs.innerHTML = '';
   const crumbs = [{ label: 'Home', path: '/' }, ...parts];
@@ -87,6 +97,67 @@ function cardList(items) {
   });
 
   return row;
+}
+
+function renderEmptyState(text) {
+  const notice = document.createElement('div');
+  notice.className = 'alert alert-light border mb-0';
+  notice.textContent = text;
+  return notice;
+}
+
+function renderManualListing(data) {
+  const section = document.createElement('section');
+  section.className = 'card shadow-sm';
+
+  const body = document.createElement('div');
+  body.className = 'card-body';
+
+  const heading = document.createElement('h1');
+  heading.className = 'h3 mb-3';
+  heading.textContent = decodeHtmlEntities(data.title || 'Manuals');
+  body.appendChild(heading);
+
+  if (Array.isArray(data.topics) && data.topics.length > 0) {
+    const topics = document.createElement('div');
+    topics.className = 'd-flex flex-wrap gap-2 mb-3';
+
+    data.topics.forEach((topic) => {
+      const badge = document.createElement('span');
+      badge.className = 'badge text-bg-light border';
+      badge.textContent = decodeHtmlEntities(topic);
+      topics.appendChild(badge);
+    });
+
+    body.appendChild(topics);
+  }
+
+  if (Array.isArray(data.manuals) && data.manuals.length > 0) {
+    const list = document.createElement('div');
+    list.className = 'list-group';
+
+    data.manuals.forEach(({ name, uri }) => {
+      const link = document.createElement('a');
+      link.className = 'list-group-item list-group-item-action';
+      link.href = uri;
+      link.textContent = decodeHtmlEntities(name || uri);
+      list.appendChild(link);
+    });
+
+    body.appendChild(list);
+  } else {
+    body.appendChild(renderEmptyState('No manuals available at this level.'));
+  }
+
+  section.appendChild(body);
+  return section;
+}
+
+function renderManualHtml(html) {
+  const article = document.createElement('article');
+  article.className = 'manual-content';
+  article.innerHTML = html;
+  return article;
 }
 
 function normalizeArrayPayload(data) {
@@ -305,12 +376,31 @@ async function renderRoute() {
       label,
       path: `/${rawParts.slice(0, index + 1).join('/')}`
     }));
-    setBreadcrumbs(manualBreadcrumbs);
 
     const data = await window.lemonApi.getManualPathFromRawSegments(rawParts);
+
+    if (data.kind === 'directory') {
+      const apiBreadcrumbs = Array.isArray(data.data.breadcrumbs) ? data.data.breadcrumbs : [];
+      setBreadcrumbs(
+        apiBreadcrumbs.map((crumb) => ({
+          label: decodeHtmlEntities(crumb.label),
+          path: crumb.href
+        }))
+      );
+      content.appendChild(renderManualListing(data.data));
+      return;
+    }
+
+    setBreadcrumbs(manualBreadcrumbs);
+
+    if (data.kind === 'html') {
+      content.appendChild(renderManualHtml(data.data));
+      return;
+    }
+
     const pre = document.createElement('pre');
     pre.className = 'manual-content';
-    pre.textContent = JSON.stringify(data, null, 2);
+    pre.textContent = data.kind === 'json' ? JSON.stringify(data.data, null, 2) : data.data;
     content.appendChild(pre);
   } catch (error) {
     showMessage(error.message);
