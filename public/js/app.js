@@ -306,10 +306,17 @@ function renderHtml(html, rawParts) {
     const $html = $(html);
 
     $html.find('table').addClass('table table-striped');
+    $html.find('img').each(function() {
+        const $img = $(this);
+        const currentSrc = $img.attr('src');
+
+        if (currentSrc) {
+            $img.attr('src', currentSrc.replace('/api/manual/', ''));
+        }
+    });
 
     article.className = 'manual-content';
     article.innerHTML = $html.html();
-    window.manualImages.rewriteManualImageUrls(article, rawParts);
 
     return article;
 }
@@ -320,9 +327,17 @@ function renderManualHtml(html, rawParts) {
 
   article.className = 'manual-content';
   $page.find('table').addClass('table table-striped');
-  
+ 
+  $page.find('img').each(function() {
+    const $img = $(this);
+    const currentSrc = $img.attr('src');
+    
+    if (currentSrc) {
+      $img.attr('src', currentSrc.replace('/api/manual/', ''));
+    }
+  });
+
   article.innerHTML = $page.html();
-  window.manualImages.rewriteManualImageUrls(article, rawParts);
   return article;
 }
 

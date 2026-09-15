@@ -1,22 +1,4 @@
 (function manualImagesSetup(globalObject) {
-  function rewriteManualImageUrls(rootElement, rawParts, toManualProxyUrl) {
-    if (!rootElement || typeof rootElement.querySelectorAll !== 'function') {
-      return;
-    }
-
-    const resolveManualProxyUrl = typeof toManualProxyUrl === 'function'
-      ? toManualProxyUrl
-      : globalObject.manualUrl && globalObject.manualUrl.toManualProxyUrl;
-
-    if (typeof resolveManualProxyUrl !== 'function') {
-      return;
-    }
-
-    rootElement.querySelectorAll('img[src]').forEach((image) => {
-      const source = image.getAttribute('src');
-      image.setAttribute('src', resolveManualProxyUrl(source, rawParts));
-    });
-  }
 
   function getImageOpenUrl(image) {
     if (!image) {
