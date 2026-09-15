@@ -7,6 +7,7 @@ const pageSearchInput = document.getElementById('page-search');
 const quickNavForm = document.getElementById('quick-nav-form');
 const quickNavSection = document.getElementById('quick-nav-section');
 const toggleQuickNavButton = document.getElementById('toggle-quick-nav');
+const quickHistory = document.getElementById('quick-history');
 const quickMake = document.getElementById('quick-make');
 const quickYear = document.getElementById('quick-year');
 const quickModel = document.getElementById('quick-model');
@@ -16,6 +17,7 @@ const modelOptions = document.getElementById('model-options');
 
 let cachedMakes = [];
 let makesHydrationPromise = null;
+let quickNavHistoryEntries = [];
 
 function updateQuickNavToggleState(isHidden) {
   toggleQuickNavButton.setAttribute('aria-pressed', String(isHidden));
@@ -342,6 +344,47 @@ function clearDataList(element) {
   element.innerHTML = '';
 }
 
+function renderQuickNavHistory() {
+  if (!quickHistory) {
+    return;
+  }
+
+  quickHistory.innerHTML = '';
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = quickNavHistoryEntries.length > 0 ? 'Choose a recent car' : 'No recent cars yet';
+  quickHistory.appendChild(placeholder);
+
+  quickNavHistoryEntries.forEach((entry, index) => {
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = window.carHistory.toHistoryLabel(entry);
+    quickHistory.appendChild(option);
+  });
+
+  quickHistory.disabled = quickNavHistoryEntries.length === 0;
+  quickHistory.value = '';
+}
+
+function loadQuickNavHistory() {
+  if (!window.carHistory) {
+    return;
+  }
+
+  quickNavHistoryEntries = window.carHistory.loadHistory(window.localStorage);
+  renderQuickNavHistory();
+}
+
+function saveQuickNavHistory(selection) {
+  if (!window.carHistory) {
+    return;
+  }
+
+  quickNavHistoryEntries = window.carHistory.saveSelection(window.localStorage, selection);
+  renderQuickNavHistory();
+}
+
 function fillDataList(element, values) {
   clearDataList(element);
   values.forEach((value) => {
@@ -447,6 +490,30 @@ async function refreshModelOptions() {
   }
   const models = extractModels(await window.lemonApi.getModels(make, year));
   fillDataList(modelOptions, models);
+}
+
+async function applyQuickNavHistorySelection(index) {
+  const entry = quickNavHistoryEntries[index];
+  if (!entry) {
+    return;
+  }
+
+  showMessage('');
+  quickMake.value = entry.make;
+  await refreshYearOptions();
+
+  if (!entry.year) {
+    return;
+  }
+
+  quickYear.value = entry.year;
+  await refreshModelOptions();
+
+  if (!entry.model) {
+    return;
+  }
+
+  quickModel.value = entry.model;
 }
 
 async function renderRoute() {
@@ -647,9 +714,20 @@ quickNavForm.addEventListener('submit', (event) => {
     : year
       ? `/${encodeURIComponent(make)}/${encodeURIComponent(year)}`
       : `/${encodeURIComponent(make)}`;
+  saveQuickNavHistory({ make, year, model });
   window.history.pushState({}, '', path);
   renderRoute();
 });
+
+if (quickHistory) {
+  quickHistory.addEventListener('change', () => {
+    if (!quickHistory.value) {
+      return;
+    }
+
+    applyQuickNavHistorySelection(Number.parseInt(quickHistory.value, 10)).catch((error) => showMessage(error.message));
+  });
+}
 
 if (toggleQuickNavButton && quickNavSection) {
   toggleQuickNavButton.addEventListener('click', () => {
@@ -666,6 +744,8 @@ async function initializeApp() {
   if (typeof feather !== 'undefined') {
     feather.replace();
   }
+
+  loadQuickNavHistory();
 
   let hydrationErrorMessage = '';
   try {
