@@ -214,6 +214,21 @@ async function proxyManual(res, pathname) {
   }
 }
 
+app.get('/api/manual/*path', async (req, res) => {
+  const manualPrefix = '/api/manual/';
+  const requestPath = req.originalUrl.split('?')[0];
+  const manualPath = requestPath.startsWith(manualPrefix)
+    ? requestPath.slice(manualPrefix.length)
+    : (Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path);
+  return proxyManual(res, `/${manualPath}`);
+});
+app.get(/^\/api\/images\d+\/.*/, async (req, res) => {
+  const requestPath = req.originalUrl.split('?')[0];
+  const manualPath = requestPath.startsWith('/api/')
+    ? requestPath.slice('/api'.length)
+    : requestPath;
+  return proxyManual(res, manualPath);
+});
 app.get('/api/makes', async (_req, res) => proxyJson(res, '/'));
 app.get('/api/:make', async (req, res) => proxyJson(res, `/${encodeURIComponent(req.params.make)}/`));
 app.get('/api/:make/:year', async (req, res) =>
@@ -225,14 +240,6 @@ app.get('/api/:make/:year/:model', async (req, res) =>
     `/${encodeURIComponent(req.params.make)}/${encodeURIComponent(req.params.year)}/${encodeURIComponent(req.params.model)}/`
   )
 );
-app.get('/api/manual/*path', async (req, res) => {
-  const manualPrefix = '/api/manual/';
-  const requestPath = req.originalUrl.split('?')[0];
-  const manualPath = requestPath.startsWith(manualPrefix)
-    ? requestPath.slice(manualPrefix.length)
-    : (Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path);
-  return proxyManual(res, `/${manualPath}`);
-});
 
 app.get(/^\/(?!api).*/, (_req, res) => {
   res.type('html').send(INDEX_HTML);

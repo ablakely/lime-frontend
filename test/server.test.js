@@ -108,6 +108,54 @@ test('manual api route preserves directory json payloads', async (t) => {
   });
 });
 
+test('manual asset paths under /api/manual are proxied as manual content', async (t) => {
+  global.fetch = async (url, options) => {
+    assert.equal(url, 'http://localhost:8080/images25/VA145687/');
+    assert.equal(options.headers.Accept, 'text/html, application/json');
+
+    return new Response('GIF89a', {
+      status: 200,
+      headers: { 'content-type': 'image/gif' }
+    });
+  };
+
+  const server = await startServer({ LEMON_API_URL: 'http://localhost:8080' });
+  t.after(() => {
+    global.fetch = realFetch;
+    server.close();
+  });
+
+  const response = await realFetch(`http://127.0.0.1:${server.address().port}/api/manual/images25/VA145687/`);
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'image/gif');
+  assert.equal(await response.text(), 'GIF89a');
+});
+
+test('/api/imagesNN asset paths are proxied as manual content', async (t) => {
+  global.fetch = async (url, options) => {
+    assert.equal(url, 'http://localhost:8080/images25/VA145687/');
+    assert.equal(options.headers.Accept, 'text/html, application/json');
+
+    return new Response('GIF89a', {
+      status: 200,
+      headers: { 'content-type': 'image/gif' }
+    });
+  };
+
+  const server = await startServer({ LEMON_API_URL: 'http://localhost:8080' });
+  t.after(() => {
+    global.fetch = realFetch;
+    server.close();
+  });
+
+  const response = await realFetch(`http://127.0.0.1:${server.address().port}/api/images25/VA145687/`);
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'image/gif');
+  assert.equal(await response.text(), 'GIF89a');
+});
+
 test('resolveLemonApiConfig prefers LEMON_API_URL and joins nested paths safely', () => {
   const { lemonUrl, resolveLemonApiConfig } = loadServer({
     LEMON_API_URL: 'https://lemon.example/manuals/',
