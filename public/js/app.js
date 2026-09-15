@@ -656,6 +656,15 @@ function hideAllAutocompleteMenus() {
   Object.values(quickNavAutocompleteFields).forEach(({ menu }) => hideAutocompleteMenu(menu));
 }
 
+function focusQuickNavField(fieldName) {
+  const field = quickNavAutocompleteFields[fieldName];
+  if (!field || !field.input || typeof field.input.focus !== 'function') {
+    return;
+  }
+
+  field.input.focus();
+}
+
 function renderAutocompleteSuggestions(fieldName) {
   const field = quickNavAutocompleteFields[fieldName];
   if (!field || !field.menu || !window.quickNavAutocomplete) {
@@ -724,12 +733,16 @@ function selectAutocompleteSuggestion(fieldName, value) {
   hideAutocompleteMenu(field.menu);
 
   if (fieldName === 'make') {
-    refreshYearOptions().catch((error) => showMessage(error.message));
+    refreshYearOptions()
+      .then(() => focusQuickNavField('year'))
+      .catch((error) => showMessage(error.message));
     return;
   }
 
   if (fieldName === 'year') {
-    refreshModelOptions().catch((error) => showMessage(error.message));
+    refreshModelOptions()
+      .then(() => focusQuickNavField('model'))
+      .catch((error) => showMessage(error.message));
   }
 }
 
