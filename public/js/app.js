@@ -184,10 +184,10 @@ function renderManualHtml(html, rawParts) {
   const article = document.createElement('article');
   const $page = $('<div>').html(html).find('.main');
 
+
   article.className = 'manual-content';
   
   article.innerHTML = $page.html();
-  rewriteManualImageUrls(article, rawParts);
   return article;
 }
 
