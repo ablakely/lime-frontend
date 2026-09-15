@@ -29,7 +29,20 @@ const quickNavAutocompleteFields = {
   model: { input: quickModel, menu: quickModelMenu, getOptions: () => cachedModels }
 };
 
+const DEFAULT_PAGE_TITLE = 'LIME Manuals';
 const THEME_STORAGE_KEY = 'lime.theme';
+
+function setPageTitle(segments = []) {
+  const normalizedSegments = Array.isArray(segments)
+    ? segments
+      .map((segment) => (segment == null ? '' : String(segment).trim()))
+      .filter(Boolean)
+    : [];
+
+  document.title = normalizedSegments.length > 0
+    ? `${normalizedSegments.join(' · ')} | ${DEFAULT_PAGE_TITLE}`
+    : DEFAULT_PAGE_TITLE;
+}
 
 function getPreferredTheme() {
   try {
@@ -749,6 +762,7 @@ function registerAutocompleteField(fieldName) {
 
 async function renderRoute() {
   const { rawParts, decodedParts: parts } = window.routeUtils.parsePathname(window.location.pathname);
+  setPageTitle(parts);
   syncQuickNavForRoute(parts);
   showMessage('');
   showLoading(true);
@@ -843,6 +857,7 @@ async function renderRoute() {
 
     if (data.kind === 'directory') {
       const apiBreadcrumbs = Array.isArray(data.data.breadcrumbs) ? data.data.breadcrumbs : [];
+      setPageTitle(apiBreadcrumbs.map((crumb) => decodeHtmlEntities(crumb.label)));
       setBreadcrumbs(
         apiBreadcrumbs.map((crumb) => ({
           label: decodeHtmlEntities(crumb.label),
