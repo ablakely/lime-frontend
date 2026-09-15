@@ -188,7 +188,7 @@ function getManualProxyBasePath(rawParts) {
 }
 
 function toManualProxyUrl(value, rawParts) {
-  if (!value || value.startsWith('data:') || value.startsWith('blob:') || value.startsWith('javascript:') || value.startsWith('#')) {
+  if (!value || value.startsWith('data:') || value.startsWith('blob:') || value.startsWith('#')) {
     return value;
   }
 
