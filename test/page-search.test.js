@@ -1,6 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizeSearchText, matchesSearchQuery, filterGroupedItems } = require('../public/js/page-search.js');
+const {
+  normalizeSearchText,
+  matchesSearchQuery,
+  filterGroupedItems,
+  getGroupedItemSectionNames
+} = require('../public/js/page-search.js');
 
 test('normalizeSearchText lowercases and collapses whitespace', () => {
   assert.equal(normalizeSearchText('  Astro   Van  '), 'astro van');
@@ -43,4 +48,16 @@ test('filterGroupedItems shows every entry when query is empty', () => {
   ], '');
 
   assert.deepEqual(visibility, [true, true]);
+});
+
+test('getGroupedItemSectionNames maps items to their current section header', () => {
+  const sectionNames = getGroupedItemSectionNames([
+    { kind: 'header', text: 'Repair' },
+    { kind: 'item', text: 'Brakes' },
+    { kind: 'item', text: 'Engine' },
+    { kind: 'header', text: 'Specifications' },
+    { kind: 'item', text: 'Dimensions' }
+  ]);
+
+  assert.deepEqual(sectionNames, ['Repair', 'Repair', 'Repair', 'Specifications', 'Specifications']);
 });

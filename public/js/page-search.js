@@ -65,17 +65,32 @@
     return visibility;
   }
 
+  function getGroupedItemSectionNames(items) {
+    let currentSectionName = '';
+
+    return items.map((item) => {
+      if (item.kind === 'header') {
+        currentSectionName = item.text;
+        return currentSectionName;
+      }
+
+      return currentSectionName;
+    });
+  }
+
   globalObject.pageSearch = {
     normalizeSearchText,
     matchesSearchQuery,
-    filterGroupedItems
+    filterGroupedItems,
+    getGroupedItemSectionNames
   };
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
       normalizeSearchText,
       matchesSearchQuery,
-      filterGroupedItems
+      filterGroupedItems,
+      getGroupedItemSectionNames
     };
   }
 })(typeof window !== 'undefined' ? window : globalThis);
