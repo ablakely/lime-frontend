@@ -10,13 +10,11 @@
   }
 
   globalObject.manualImages = {
-    rewriteManualImageUrls,
     getImageOpenUrl
   };
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
-      rewriteManualImageUrls,
       getImageOpenUrl
     };
   }

@@ -12,9 +12,13 @@
     };
   }
 
-  globalObject.routeUtils = { parsePathname };
+  function shouldShowQuickNavByDefault(parts) {
+    return Array.isArray(parts) && parts.length === 0;
+  }
+
+  globalObject.routeUtils = { parsePathname, shouldShowQuickNavByDefault };
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { parsePathname };
+    module.exports = { parsePathname, shouldShowQuickNavByDefault };
   }
 })(typeof window !== 'undefined' ? window : globalThis);
