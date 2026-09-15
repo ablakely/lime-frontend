@@ -54,11 +54,16 @@ function updateThemeToggleState(theme) {
 
   const isDarkMode = theme === 'dark';
   const nextModeLabel = isDarkMode ? 'light' : 'dark';
+  const toggleIcon = isDarkMode ? 'sun' : 'moon';
 
   themeToggleButton.setAttribute('aria-pressed', String(isDarkMode));
   themeToggleButton.setAttribute('aria-label', `Switch to ${nextModeLabel} mode`);
   themeToggleButton.setAttribute('title', `Switch to ${nextModeLabel} mode`);
-  themeToggleButton.textContent = isDarkMode ? 'Light mode' : 'Dark mode';
+  themeToggleButton.innerHTML = `<i data-feather="${toggleIcon}"></i><span class="visually-hidden">Switch to ${nextModeLabel} mode</span>`;
+
+  if (typeof feather !== 'undefined') {
+    feather.replace();
+  }
 }
 
 function applyTheme(theme) {
