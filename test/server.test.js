@@ -134,6 +134,32 @@ test('manual api route preserves binary image responses', async (t) => {
   assert.deepEqual(new Uint8Array(await response.arrayBuffer()), imageBytes);
 });
 
+test('images route preserves binary image responses', async (t) => {
+  const imageBytes = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 255, 17, 34]);
+
+  global.fetch = async (url, options) => {
+    assert.equal(url, 'http://localhost:8080/images/DM02Q313/chry60/515649253/');
+    assert.equal(options.headers.Accept, 'text/html, application/json');
+
+    return new Response(imageBytes, {
+      status: 200,
+      headers: { 'content-type': 'image/png' }
+    });
+  };
+
+  const server = await startServer({ LEMON_API_URL: 'http://localhost:8080' });
+  t.after(() => {
+    global.fetch = realFetch;
+    server.close();
+  });
+
+  const response = await realFetch(`http://127.0.0.1:${server.address().port}/images/DM02Q313/chry60/515649253/`);
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'image/png');
+  assert.deepEqual(new Uint8Array(await response.arrayBuffer()), imageBytes);
+});
+
 test('resolveLemonApiConfig prefers LEMON_API_URL and joins nested paths safely', () => {
   const { lemonUrl, resolveLemonApiConfig } = loadServer({
     LEMON_API_URL: 'https://lemon.example/manuals/',

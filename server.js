@@ -240,6 +240,13 @@ app.get('/images:num/*path', async (req, res) => {
    return proxyManual(res, `/images${req.params.num}/${ (Array.isArray(req.params.path)) ? req.params.path.join('/') : req.params.path }`);
 });
 
+app.get('/images/*path', async (req, res) => {
+  return proxyManual(
+    res,
+    `/images/${(Array.isArray(req.params.path)) ? req.params.path.join('/') : req.params.path}`
+  );
+});
+
 app.get(/^\/(?!api).*/, (_req, res) => {
   res.type('html').send(INDEX_HTML);
 });
