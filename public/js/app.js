@@ -431,7 +431,9 @@ function extractModels(data) {
 
     if (entry.model && Array.isArray(entry.engines) && entry.engines.length > 0) {
       entry.engines.forEach((engine) => {
-        models.push(engine.name || entry.model);
+        const engineName = String((engine && engine.name) || '').trim();
+        const modelName = String(entry.model).trim();
+        models.push(engineName ? `${modelName} ${engineName}`.trim() : modelName);
       });
       return;
     }
@@ -645,6 +647,16 @@ window.addEventListener('click', (event) => {
   const link = event.target.closest('a[href^="/"]');
   if (!link || link.target === '_blank' || link.hasAttribute('download')) {
     return;
+  }
+
+  if (event.target.closest('.card-list')) {
+    const destinationPath = new URL(link.href, window.location.origin).pathname;
+    const { decodedParts } = window.routeUtils.parsePathname(destinationPath);
+    if (decodedParts.length > 0 && decodedParts.length <= 3) {
+      const [make = '', year = ''] = decodedParts;
+      const model = decodedParts.slice(2).join('/');
+      saveQuickNavHistory({ make, year, model });
+    }
   }
 
   event.preventDefault();
