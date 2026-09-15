@@ -32,3 +32,13 @@ body {
   height: 1rem;
   vertical-align: middle;
 }
+
+.navbar-search {
+  min-width: min(100%, 16rem);
+}
+
+@media (min-width: 992px) {
+  .navbar-search {
+    max-width: 22rem;
+  }
+}

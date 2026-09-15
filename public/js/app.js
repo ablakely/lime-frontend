@@ -1,7 +1,9 @@
 const content = document.getElementById('content');
 const loading = document.getElementById('loading');
 const message = document.getElementById('message');
+const searchEmptyState = document.getElementById('search-empty-state');
 const breadcrumbs = document.getElementById('breadcrumbs');
+const pageSearchInput = document.getElementById('page-search');
 const quickNavForm = document.getElementById('quick-nav-form');
 const quickNavSection = document.getElementById('quick-nav-section');
 const toggleQuickNavButton = document.getElementById('toggle-quick-nav');
@@ -112,6 +114,85 @@ function renderEmptyState(text) {
   notice.className = 'alert alert-light border mb-0';
   notice.textContent = text;
   return notice;
+}
+
+function setSearchEmptyState(text) {
+  if (!searchEmptyState) {
+    return;
+  }
+
+  searchEmptyState.textContent = text || '';
+  searchEmptyState.classList.toggle('d-none', !text);
+}
+
+function toggleElementVisibility(element, isVisible) {
+  element.classList.toggle('d-none', !isVisible);
+}
+
+function applyCardListSearch(query) {
+  let totalItems = 0;
+  let visibleItems = 0;
+
+  content.querySelectorAll('.card-list').forEach((list) => {
+    Array.from(list.children).forEach((item) => {
+      const isVisible = window.pageSearch.matchesSearchQuery(item.textContent, query);
+      toggleElementVisibility(item, isVisible);
+      totalItems += 1;
+      if (isVisible) {
+        visibleItems += 1;
+      }
+    });
+  });
+
+  return { totalItems, visibleItems };
+}
+
+function applyGroupedListSearch(query) {
+  let totalItems = 0;
+  let visibleItems = 0;
+
+  content.querySelectorAll('.list-group').forEach((list) => {
+    const children = Array.from(list.children);
+    const definitions = children.map((child) => ({
+      kind: child.tagName === 'LI' ? 'header' : 'item',
+      text: child.textContent
+    }));
+    const visibility = window.pageSearch.filterGroupedItems(definitions, query);
+
+    children.forEach((child, index) => {
+      const isHeader = definitions[index].kind === 'header';
+      const isVisible = visibility[index];
+      toggleElementVisibility(child, isVisible);
+
+      if (!isHeader) {
+        totalItems += 1;
+        if (isVisible) {
+          visibleItems += 1;
+        }
+      }
+    });
+  });
+
+  return { totalItems, visibleItems };
+}
+
+function applyPageSearch() {
+  if (!pageSearchInput || !window.pageSearch) {
+    return;
+  }
+
+  const query = pageSearchInput.value;
+  const results = [applyCardListSearch(query), applyGroupedListSearch(query)];
+  const totalItems = results.reduce((sum, result) => sum + result.totalItems, 0);
+  const visibleItems = results.reduce((sum, result) => sum + result.visibleItems, 0);
+  const hasQuery = window.pageSearch.normalizeSearchText(query).length > 0;
+
+  if (hasQuery && totalItems > 0 && visibleItems === 0) {
+    setSearchEmptyState(`No items on this page match "${query.trim()}".`);
+    return;
+  }
+
+  setSearchEmptyState('');
 }
 
 function renderManualListing(data) {
@@ -462,6 +543,7 @@ async function renderRoute() {
     showMessage(error.message);
   } finally {
     showLoading(false);
+    applyPageSearch();
   }
 }
 
@@ -547,6 +629,10 @@ if (toggleQuickNavButton && quickNavSection) {
     const isHidden = quickNavSection.classList.toggle('d-none');
     updateQuickNavToggleState(isHidden);
   });
+}
+
+if (pageSearchInput) {
+  pageSearchInput.addEventListener('input', applyPageSearch);
 }
 
 async function initializeApp() {
