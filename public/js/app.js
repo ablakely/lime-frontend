@@ -377,7 +377,7 @@ async function renderRoute() {
       path: `/${rawParts.slice(0, index + 1).join('/')}`
     }));
 
-    const data = await window.lemonApi.getManualPathFromRawSegments(rawParts);
+    const data = await window.lemonApi.getManualPathWithIndexFallbackFromRawSegments(rawParts);
 
     if (data.kind === 'directory') {
       const apiBreadcrumbs = Array.isArray(data.data.breadcrumbs) ? data.data.breadcrumbs : [];
