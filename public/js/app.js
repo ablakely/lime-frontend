@@ -28,13 +28,9 @@ function syncQuickNavForRoute(parts) {
     return;
   }
 
-  const isHomePage = parts.length === 0;
-  if (isHomePage) {
-    quickNavSection.classList.remove('d-none');
-  }
-
-  toggleQuickNavButton.classList.toggle('d-none', isHomePage);
-  updateQuickNavToggleState(quickNavSection.classList.contains('d-none'));
+  quickNavSection.classList.add('d-none');
+  toggleQuickNavButton.classList.remove('d-none');
+  updateQuickNavToggleState(true);
 }
 
 function showLoading(show) {
