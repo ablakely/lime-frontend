@@ -38,7 +38,10 @@
     const manualOrigin = 'https://manual.local';
     const normalizedValue = normalizeLegacyAssetPath(value);
     const resolved = new URL(normalizedValue, `${manualOrigin}${basePath}`);
-    return `/api/manual${resolved.pathname}${resolved.search}${resolved.hash}`;
+    const proxiedPathname = resolved.pathname.startsWith('/api/manual/')
+      ? resolved.pathname
+      : `/api/manual${resolved.pathname}`;
+    return `${proxiedPathname}${resolved.search}${resolved.hash}`;
   }
 
   globalObject.manualUrl = {
