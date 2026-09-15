@@ -173,39 +173,10 @@ function renderiFrame(uri) {
     return iframe;
 }
 
-function getManualProxyBasePath(rawParts) {
-  const proxyPath = `/api/manual/${rawParts.join('/')}`;
-  if (proxyPath.endsWith('/')) {
-    return proxyPath;
-  }
-
-  const lastSegment = rawParts.length > 0 ? decodeURIComponent(rawParts[rawParts.length - 1]) : '';
-  if (/\.[a-z0-9]+$/i.test(lastSegment)) {
-    return proxyPath.slice(0, proxyPath.lastIndexOf('/') + 1);
-  }
-
-  return `${proxyPath}/`;
-}
-
-function toManualProxyUrl(value, rawParts) {
-  if (!value || value.startsWith('data:') || value.startsWith('blob:') || value.startsWith('#')) {
-    return value;
-  }
-
-  if (/^[a-z][a-z0-9+.-]*:/i.test(value) || value.startsWith('//') || value.startsWith('/api/manual/')) {
-    return value;
-  }
-
-  const basePath = getManualProxyBasePath(rawParts);
-  const manualOrigin = 'https://manual.local';
-  const resolved = new URL(value, `${manualOrigin}${basePath}`);
-  return `/api/manual${resolved.pathname}${resolved.search}${resolved.hash}`;
-}
-
 function rewriteManualImageUrls(rootElement, rawParts) {
   rootElement.querySelectorAll('img[src]').forEach((image) => {
     const source = image.getAttribute('src');
-    image.setAttribute('src', toManualProxyUrl(source, rawParts));
+    image.setAttribute('src', window.manualUrl.toManualProxyUrl(source, rawParts));
   });
 }
 
