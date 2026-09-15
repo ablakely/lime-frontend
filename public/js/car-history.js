@@ -78,7 +78,31 @@
     return nextHistory;
   }
 
+  function clearHistory(storage) {
+    if (!storage) {
+      return [];
+    }
+
+    if (typeof storage.removeItem === 'function') {
+      try {
+        storage.removeItem(STORAGE_KEY);
+        return [];
+      } catch (_error) {
+      }
+    }
+
+    if (typeof storage.setItem === 'function') {
+      try {
+        storage.setItem(STORAGE_KEY, JSON.stringify([]));
+      } catch (_error) {
+      }
+    }
+
+    return [];
+  }
+
   globalObject.carHistory = {
+    clearHistory,
     loadHistory,
     saveSelection,
     toHistoryLabel
@@ -86,6 +110,7 @@
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
+      clearHistory,
       loadHistory,
       saveSelection,
       toHistoryLabel

@@ -52,25 +52,34 @@
           <h1 class="h4 mb-3">Find a Manual</h1>
           <form id="quick-nav-form" class="row g-2 align-items-end">
             <div class="col-12">
-              <label for="quick-history" class="form-label">Recent cars</label>
+              <div class="d-flex justify-content-between align-items-center">
+                <label for="quick-history" class="form-label mb-1">Recent cars</label>
+                <button id="clear-quick-history" type="button" class="btn btn-link btn-sm p-0">Clear</button>
+              </div>
               <select id="quick-history" class="form-select">
                 <option value="">Choose a recent car</option>
               </select>
             </div>
             <div class="col-12 col-md-4">
               <label for="quick-make" class="form-label">Make</label>
-              <input id="quick-make" class="form-control" list="make-options" autocomplete="off" />
-              <datalist id="make-options"></datalist>
+              <div class="quick-nav-autocomplete">
+                <input id="quick-make" class="form-control" autocomplete="off" />
+                <div id="quick-make-menu" class="quick-nav-menu list-group shadow-sm d-none"></div>
+              </div>
             </div>
             <div class="col-12 col-md-3">
               <label for="quick-year" class="form-label">Year</label>
-              <input id="quick-year" class="form-control" list="year-options" autocomplete="off" />
-              <datalist id="year-options"></datalist>
+              <div class="quick-nav-autocomplete">
+                <input id="quick-year" class="form-control" autocomplete="off" />
+                <div id="quick-year-menu" class="quick-nav-menu list-group shadow-sm d-none"></div>
+              </div>
             </div>
             <div class="col-12 col-md-4">
               <label for="quick-model" class="form-label">Model/Engine</label>
-              <input id="quick-model" class="form-control" list="model-options" autocomplete="off" />
-              <datalist id="model-options"></datalist>
+              <div class="quick-nav-autocomplete">
+                <input id="quick-model" class="form-control" autocomplete="off" />
+                <div id="quick-model-menu" class="quick-nav-menu list-group shadow-sm d-none"></div>
+              </div>
             </div>
             <div class="col-12 col-md-1 d-grid">
               <button type="submit" class="btn btn-primary">Go</button>
@@ -101,6 +110,7 @@
     <script src="/js/manual-url.js"></script>
     <script src="/js/page-search.js"></script>
     <script src="/js/car-history.js"></script>
+    <script src="/js/quick-nav-autocomplete.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script src="/js/app.js"></script>
   </body>

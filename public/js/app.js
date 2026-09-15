@@ -8,16 +8,25 @@ const quickNavForm = document.getElementById('quick-nav-form');
 const quickNavSection = document.getElementById('quick-nav-section');
 const toggleQuickNavButton = document.getElementById('toggle-quick-nav');
 const quickHistory = document.getElementById('quick-history');
+const clearQuickHistoryButton = document.getElementById('clear-quick-history');
 const quickMake = document.getElementById('quick-make');
 const quickYear = document.getElementById('quick-year');
 const quickModel = document.getElementById('quick-model');
-const makeOptions = document.getElementById('make-options');
-const yearOptions = document.getElementById('year-options');
-const modelOptions = document.getElementById('model-options');
+const quickMakeMenu = document.getElementById('quick-make-menu');
+const quickYearMenu = document.getElementById('quick-year-menu');
+const quickModelMenu = document.getElementById('quick-model-menu');
 
 let cachedMakes = [];
 let makesHydrationPromise = null;
 let quickNavHistoryEntries = [];
+let cachedYears = [];
+let cachedModels = [];
+
+const quickNavAutocompleteFields = {
+  make: { input: quickMake, menu: quickMakeMenu, getOptions: () => cachedMakes },
+  year: { input: quickYear, menu: quickYearMenu, getOptions: () => cachedYears },
+  model: { input: quickModel, menu: quickModelMenu, getOptions: () => cachedModels }
+};
 
 function updateQuickNavToggleState(isHidden) {
   toggleQuickNavButton.setAttribute('aria-pressed', String(isHidden));
@@ -33,6 +42,7 @@ function syncQuickNavForRoute(parts) {
   quickNavSection.classList.add('d-none');
   toggleQuickNavButton.classList.remove('d-none');
   updateQuickNavToggleState(true);
+  resetQuickNavForm();
 }
 
 function showLoading(show) {
@@ -341,7 +351,16 @@ function normalizeArrayPayload(data) {
 }
 
 function clearDataList(element) {
-  element.innerHTML = '';
+  if (element === 'years') {
+    cachedYears = [];
+    renderAutocompleteSuggestions('year');
+    return;
+  }
+
+  if (element === 'models') {
+    cachedModels = [];
+    renderAutocompleteSuggestions('model');
+  }
 }
 
 function renderQuickNavHistory() {
@@ -365,6 +384,9 @@ function renderQuickNavHistory() {
 
   quickHistory.disabled = quickNavHistoryEntries.length === 0;
   quickHistory.value = '';
+  if (clearQuickHistoryButton) {
+    clearQuickHistoryButton.disabled = quickNavHistoryEntries.length === 0;
+  }
 }
 
 function loadQuickNavHistory() {
@@ -385,13 +407,13 @@ function saveQuickNavHistory(selection) {
   renderQuickNavHistory();
 }
 
-function fillDataList(element, values) {
-  clearDataList(element);
-  values.forEach((value) => {
-    const option = document.createElement('option');
-    option.value = value;
-    element.appendChild(option);
-  });
+function clearQuickNavHistory() {
+  if (!window.carHistory) {
+    return;
+  }
+
+  quickNavHistoryEntries = window.carHistory.clearHistory(window.localStorage);
+  renderQuickNavHistory();
 }
 
 function extractMakes(data) {
@@ -446,19 +468,17 @@ function extractModels(data) {
 }
 
 async function hydrateMakesIfNeeded() {
-  if (cachedMakes.length > 0 && makeOptions.childElementCount > 0) {
+  if (cachedMakes.length > 0) {
     return cachedMakes;
   }
 
   if (!makesHydrationPromise) {
     makesHydrationPromise = (async () => {
       try {
-        cachedMakes = extractMakes(await window.lemonApi.getMakes());
-        fillDataList(makeOptions, cachedMakes);
+        cachedMakes = window.quickNavAutocomplete.uniqueOptions(extractMakes(await window.lemonApi.getMakes()));
         return cachedMakes;
       } catch (error) {
         cachedMakes = [];
-        clearDataList(makeOptions);
         throw new Error(`Unable to load makes for autocomplete. ${error.message}`);
       } finally {
         makesHydrationPromise = null;
@@ -471,51 +491,162 @@ async function hydrateMakesIfNeeded() {
 
 async function refreshYearOptions() {
   const make = quickMake.value.trim();
-  clearDataList(yearOptions);
-  clearDataList(modelOptions);
+  clearDataList('years');
+  clearDataList('models');
   quickYear.value = '';
   quickModel.value = '';
   if (!make) {
     return;
   }
   const years = extractYears(await window.lemonApi.getYears(make));
-  fillDataList(yearOptions, years);
+  cachedYears = window.quickNavAutocomplete.uniqueOptions(years);
+  renderAutocompleteSuggestions('year');
 }
 
 async function refreshModelOptions() {
   const make = quickMake.value.trim();
   const year = quickYear.value.trim();
-  clearDataList(modelOptions);
+  clearDataList('models');
   quickModel.value = '';
   if (!make || !year) {
     return;
   }
   const models = extractModels(await window.lemonApi.getModels(make, year));
-  fillDataList(modelOptions, models);
+  cachedModels = window.quickNavAutocomplete.uniqueOptions(models);
+  renderAutocompleteSuggestions('model');
 }
 
-async function applyQuickNavHistorySelection(index) {
-  const entry = quickNavHistoryEntries[index];
-  if (!entry) {
+function buildQuickNavPath(selection) {
+  const make = String(selection.make || '').trim();
+  const year = String(selection.year || '').trim();
+  const model = String(selection.model || '').trim();
+
+  if (model) {
+    return `/${encodeURIComponent(make)}/${encodeURIComponent(year)}/${encodeURIComponent(model)}`;
+  }
+
+  if (year) {
+    return `/${encodeURIComponent(make)}/${encodeURIComponent(year)}`;
+  }
+
+  return `/${encodeURIComponent(make)}`;
+}
+
+function hideAutocompleteMenu(menu) {
+  if (!menu) {
     return;
   }
 
+  menu.classList.add('d-none');
+  menu.innerHTML = '';
+}
+
+function hideAllAutocompleteMenus() {
+  Object.values(quickNavAutocompleteFields).forEach(({ menu }) => hideAutocompleteMenu(menu));
+}
+
+function renderAutocompleteSuggestions(fieldName) {
+  const field = quickNavAutocompleteFields[fieldName];
+  if (!field || !field.menu || !window.quickNavAutocomplete) {
+    return;
+  }
+
+  const matches = window.quickNavAutocomplete.filterOptions(field.getOptions(), field.input.value);
+  hideAutocompleteMenu(field.menu);
+
+  if (matches.length === 0) {
+    return;
+  }
+
+  matches.forEach((match) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'list-group-item list-group-item-action';
+    button.dataset.value = match;
+    button.textContent = match;
+    field.menu.appendChild(button);
+  });
+
+  field.menu.classList.remove('d-none');
+}
+
+function resetQuickNavForm() {
   showMessage('');
-  quickMake.value = entry.make;
-  await refreshYearOptions();
+  hideAllAutocompleteMenus();
+  quickHistory.value = '';
+  quickMake.value = '';
+  quickYear.value = '';
+  quickModel.value = '';
+  clearDataList('years');
+  clearDataList('models');
+}
 
-  if (!entry.year) {
+function navigateQuickNav(selection) {
+  const make = String(selection.make || '').trim();
+  const year = String(selection.year || '').trim();
+  const model = String(selection.model || '').trim();
+
+  if (!make) {
+    showMessage('Select a make before navigating.');
     return;
   }
 
-  quickYear.value = entry.year;
-  await refreshModelOptions();
-
-  if (!entry.model) {
+  if (model && !year) {
+    showMessage('Select a year before selecting a model.');
     return;
   }
 
-  quickModel.value = entry.model;
+  saveQuickNavHistory({ make, year, model });
+  const path = buildQuickNavPath({ make, year, model });
+  resetQuickNavForm();
+  window.history.pushState({}, '', path);
+  renderRoute();
+}
+
+function selectAutocompleteSuggestion(fieldName, value) {
+  const field = quickNavAutocompleteFields[fieldName];
+  if (!field) {
+    return;
+  }
+
+  field.input.value = value;
+  hideAutocompleteMenu(field.menu);
+
+  if (fieldName === 'make') {
+    refreshYearOptions().catch((error) => showMessage(error.message));
+    return;
+  }
+
+  if (fieldName === 'year') {
+    refreshModelOptions().catch((error) => showMessage(error.message));
+  }
+}
+
+function registerAutocompleteField(fieldName) {
+  const field = quickNavAutocompleteFields[fieldName];
+  if (!field || !field.input || !field.menu) {
+    return;
+  }
+
+  field.input.addEventListener('focus', () => renderAutocompleteSuggestions(fieldName));
+  field.input.addEventListener('input', () => renderAutocompleteSuggestions(fieldName));
+  field.input.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      hideAutocompleteMenu(field.menu);
+    }
+  });
+
+  field.menu.addEventListener('mousedown', (event) => {
+    event.preventDefault();
+  });
+  field.menu.addEventListener('click', (event) => {
+    const suggestion = event.target.closest('button[data-value]');
+    if (!suggestion) {
+      return;
+    }
+
+    selectAutocompleteSuggestion(fieldName, suggestion.dataset.value || '');
+  });
 }
 
 async function renderRoute() {
@@ -677,8 +808,8 @@ function debounce(fn, delayMs = 200) {
 const refreshYearOptionsOnInput = debounce(() => {
   const value = quickMake.value.trim();
   if (!cachedMakes.includes(value)) {
-    clearDataList(yearOptions);
-    clearDataList(modelOptions);
+    clearDataList('years');
+    clearDataList('models');
     quickYear.value = '';
     quickModel.value = '';
     return;
@@ -688,9 +819,8 @@ const refreshYearOptionsOnInput = debounce(() => {
 
 const refreshModelOptionsOnInput = debounce(() => {
   const selectedYear = quickYear.value.trim();
-  const knownYears = Array.from(yearOptions.querySelectorAll('option')).map((option) => option.value);
-  if (!knownYears.includes(selectedYear)) {
-    clearDataList(modelOptions);
+  if (!cachedYears.includes(selectedYear)) {
+    clearDataList('models');
     quickModel.value = '';
     return;
   }
@@ -707,28 +837,11 @@ quickYear.addEventListener('change', () => {
 quickYear.addEventListener('input', refreshModelOptionsOnInput);
 quickNavForm.addEventListener('submit', (event) => {
   event.preventDefault();
-  const make = quickMake.value.trim();
-  const year = quickYear.value.trim();
-  const model = quickModel.value.trim();
-
-  if (!make) {
-    showMessage('Select a make before navigating.');
-    return;
-  }
-
-  if (model && !year) {
-    showMessage('Select a year before selecting a model.');
-    return;
-  }
-
-  const path = model
-    ? `/${encodeURIComponent(make)}/${encodeURIComponent(year)}/${encodeURIComponent(model)}`
-    : year
-      ? `/${encodeURIComponent(make)}/${encodeURIComponent(year)}`
-      : `/${encodeURIComponent(make)}`;
-  saveQuickNavHistory({ make, year, model });
-  window.history.pushState({}, '', path);
-  renderRoute();
+  navigateQuickNav({
+    make: quickMake.value,
+    year: quickYear.value,
+    model: quickModel.value
+  });
 });
 
 if (quickHistory) {
@@ -737,7 +850,10 @@ if (quickHistory) {
       return;
     }
 
-    applyQuickNavHistorySelection(Number.parseInt(quickHistory.value, 10)).catch((error) => showMessage(error.message));
+    const entry = quickNavHistoryEntries[Number.parseInt(quickHistory.value, 10)];
+    if (entry) {
+      navigateQuickNav(entry);
+    }
   });
 }
 
@@ -745,12 +861,30 @@ if (toggleQuickNavButton && quickNavSection) {
   toggleQuickNavButton.addEventListener('click', () => {
     const isHidden = quickNavSection.classList.toggle('d-none');
     updateQuickNavToggleState(isHidden);
+    resetQuickNavForm();
+  });
+}
+
+if (clearQuickHistoryButton) {
+  clearQuickHistoryButton.addEventListener('click', () => {
+    clearQuickNavHistory();
+    resetQuickNavForm();
   });
 }
 
 if (pageSearchInput) {
   pageSearchInput.addEventListener('input', applyPageSearch);
 }
+
+Object.keys(quickNavAutocompleteFields).forEach(registerAutocompleteField);
+
+window.addEventListener('click', (event) => {
+  if (event.target.closest('.quick-nav-autocomplete')) {
+    return;
+  }
+
+  hideAllAutocompleteMenus();
+});
 
 async function initializeApp() {
   if (typeof feather !== 'undefined') {
