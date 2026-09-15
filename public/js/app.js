@@ -385,7 +385,7 @@ function renderManualListing(data, rawParts) {
     body.appendChild(list);
   } else {
     if (data.content) {
-        body.appendChild(renderHtml(data.content, rawParts));
+        body.appendChild(renderHtml(data.content));
     } else {
         body.appendChild(renderEmptyState('No manuals were found for this path.'));
     }
@@ -401,10 +401,10 @@ function renderiFrame(uri) {
     return iframe;
 }
 
-function renderHtml(html, rawParts) {
+function renderHtml(html) {
     const article = document.createElement('article');
 
-    const $html = $(html);
+    const $html = $("<div>").html(html);
 
     $html.find('table').addClass('table table-striped');
     $html.find('img').each(function() {
