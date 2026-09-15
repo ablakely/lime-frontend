@@ -163,6 +163,31 @@ function toggleElementVisibility(element, isVisible) {
   element.classList.toggle('d-none', !isVisible);
 }
 
+function setGroupedItemSectionContext(element, sectionName, showSectionName) {
+  if (!(element instanceof HTMLElement) || element.tagName !== 'A') {
+    return;
+  }
+
+  const itemLabel = element.dataset.itemLabel || element.textContent || '';
+  element.dataset.itemLabel = itemLabel;
+
+  if (!showSectionName || !sectionName) {
+    element.textContent = itemLabel;
+    return;
+  }
+
+  element.replaceChildren();
+
+  const title = document.createElement('span');
+  title.textContent = itemLabel;
+  element.appendChild(title);
+
+  const context = document.createElement('span');
+  context.className = 'd-block text-muted small';
+  context.textContent = sectionName;
+  element.appendChild(context);
+}
+
 function applyCardListSearch(query) {
   let totalItems = 0;
   let visibleItems = 0;
@@ -189,14 +214,20 @@ function applyGroupedListSearch(query) {
     const children = Array.from(list.children);
     const definitions = children.map((child) => ({
       kind: child.tagName === 'LI' && child.classList.contains('list-group-item-dark') ? 'header' : 'item',
-      text: child.textContent
+      text: child.dataset.itemLabel || child.textContent
     }));
     const visibility = window.pageSearch.filterGroupedItems(definitions, query);
+    const sectionNames = window.pageSearch.getGroupedItemSectionNames(definitions);
+    const hasQuery = window.pageSearch.normalizeSearchText(query).length > 0;
 
     children.forEach((child, index) => {
       const isHeader = definitions[index].kind === 'header';
       const isVisible = visibility[index];
       toggleElementVisibility(child, isVisible);
+
+      if (!isHeader) {
+        setGroupedItemSectionContext(child, sectionNames[index], hasQuery && isVisible);
+      }
 
       if (!isHeader) {
         totalItems += 1;
@@ -259,25 +290,24 @@ function renderManualListing(data, rawParts) {
     const list = document.createElement('div');
     list.className = 'list-group';
 
-    var sections = [];
+    const sectionedManuals = window.manualSections
+      ? window.manualSections.getSectionedManuals(data.manuals)
+      : [];
 
-    data.manuals.forEach(({ name, uri }) => {
-      const urisplit = uri.split('/');
-      const section = decodeURIComponent(urisplit[urisplit.length - 3]);
-
-      if (sections.indexOf(section) == -1) {
-          const header = document.createElement('li');
-          header.className = 'list-group-item list-group-item-dark';
-          header.textContent = section;
-          list.appendChild(header);
-
-          sections.push(section);
+    sectionedManuals.forEach((entry) => {
+      if (entry.kind === 'header') {
+        const header = document.createElement('li');
+        header.className = 'list-group-item list-group-item-dark';
+        header.textContent = entry.text;
+        list.appendChild(header);
+        return;
       }
 
       const link = document.createElement('a');
       link.className = 'list-group-item list-group-item-action';
-      link.href = uri;
-      link.textContent = decodeHtmlEntities(name || uri);
+      link.href = entry.uri;
+      link.dataset.itemLabel = decodeHtmlEntities(entry.name || entry.uri);
+      setGroupedItemSectionContext(link, entry.section, false);
       list.appendChild(link);
     });
 
