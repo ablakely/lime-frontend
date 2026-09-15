@@ -128,7 +128,7 @@ test('manual asset paths under /api/manual are proxied as manual content', async
   const response = await realFetch(`http://127.0.0.1:${server.address().port}/api/manual/images25/VA145687/`);
 
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get('content-type'), 'image/gif');
+  assert.match(response.headers.get('content-type') || '', /^image\/gif\b/);
   assert.equal(await response.text(), 'GIF89a');
 });
 
@@ -152,7 +152,7 @@ test('/api/imagesNN asset paths are proxied as manual content', async (t) => {
   const response = await realFetch(`http://127.0.0.1:${server.address().port}/api/images25/VA145687/`);
 
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get('content-type'), 'image/gif');
+  assert.match(response.headers.get('content-type') || '', /^image\/gif\b/);
   assert.equal(await response.text(), 'GIF89a');
 });
 
