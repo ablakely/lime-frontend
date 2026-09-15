@@ -160,7 +160,11 @@ function renderManualListing(data) {
 
     body.appendChild(list);
   } else {
-    body.appendChild(renderEmptyState('No manuals were found for this path.'));
+    if (data.content) {
+        body.appendChild(renderHtml(data.content));
+    } else {
+        body.appendChild(renderEmptyState('No manuals were found for this path.'));
+    }
   }
 
   section.appendChild(body);
@@ -178,6 +182,15 @@ function rewriteManualImageUrls(rootElement, rawParts) {
     const source = image.getAttribute('src');
     image.setAttribute('src', window.manualUrl.toManualProxyUrl(source, rawParts));
   });
+}
+
+function renderHtml(html) {
+    const article = document.createElement('article');
+
+    article.classname = 'manual-content';
+    article.innerHTML = html;
+
+    return article;
 }
 
 function renderManualHtml(html, rawParts) {
