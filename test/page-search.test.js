@@ -41,6 +41,17 @@ test('filterGroupedItems shows a full section when its header matches the query'
   assert.deepEqual(visibility, [false, false, false, true, true, true]);
 });
 
+test('filterGroupedItems keeps each matching duplicate item under its section header', () => {
+  const visibility = filterGroupedItems([
+    { kind: 'header', text: 'Specifications' },
+    { kind: 'item', text: 'Overview' },
+    { kind: 'header', text: 'Repair' },
+    { kind: 'item', text: 'Overview' }
+  ], 'overview');
+
+  assert.deepEqual(visibility, [true, true, true, true]);
+});
+
 test('filterGroupedItems shows every entry when query is empty', () => {
   const visibility = filterGroupedItems([
     { kind: 'header', text: 'Repair' },

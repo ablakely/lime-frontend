@@ -290,26 +290,24 @@ function renderManualListing(data, rawParts) {
     const list = document.createElement('div');
     list.className = 'list-group';
 
-    var sections = [];
+    const sectionedManuals = window.manualSections
+      ? window.manualSections.getSectionedManuals(data.manuals)
+      : [];
 
-    data.manuals.forEach(({ name, uri }) => {
-      const urisplit = uri.split('/');
-      const section = decodeURIComponent(urisplit[urisplit.length - 3]);
-
-      if (sections.indexOf(section) == -1) {
-          const header = document.createElement('li');
-          header.className = 'list-group-item list-group-item-dark';
-          header.textContent = section;
-          list.appendChild(header);
-
-          sections.push(section);
+    sectionedManuals.forEach((entry) => {
+      if (entry.kind === 'header') {
+        const header = document.createElement('li');
+        header.className = 'list-group-item list-group-item-dark';
+        header.textContent = entry.text;
+        list.appendChild(header);
+        return;
       }
 
       const link = document.createElement('a');
       link.className = 'list-group-item list-group-item-action';
-      link.href = uri;
-      link.dataset.itemLabel = decodeHtmlEntities(name || uri);
-      setGroupedItemSectionContext(link, section, false);
+      link.href = entry.uri;
+      link.dataset.itemLabel = decodeHtmlEntities(entry.name || entry.uri);
+      setGroupedItemSectionContext(link, entry.section, false);
       list.appendChild(link);
     });
 
