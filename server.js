@@ -182,12 +182,13 @@ async function proxyManual(res, pathname) {
       headers: { Accept: 'text/html, application/json' }
     });
     const contentType = response.headers.get('content-type') || '';
-    const body = await response.text();
+    const bodyBuffer = Buffer.from(await response.arrayBuffer());
+    const bodyText = bodyBuffer.toString('utf8');
 
     if (!response.ok) {
       if (contentType.includes('application/json')) {
         try {
-          const data = JSON.parse(body);
+          const data = JSON.parse(bodyText);
           return res.status(response.status).json({
             error: data.error || `LEMON API request failed (${response.status})`,
             details: data.details || response.statusText
@@ -199,15 +200,15 @@ async function proxyManual(res, pathname) {
 
       return res.status(response.status).json({
         error: `LEMON API request failed (${response.status})`,
-        details: body || response.statusText
+        details: bodyText || response.statusText
       });
     }
 
     if (contentType.includes('application/json')) {
-      return res.type('application/json').send(body);
+      return res.type('application/json').send(bodyText);
     }
 
-    return res.type(contentType || 'text/html').send(body);
+    return res.type(contentType || 'text/html').send(bodyBuffer);
   } catch (error) {
     logProxyFailure('LEMON API request failed', pathname, LEMON_API_CONFIG, error, targetUrl);
     return sendConnectivityError(res);
