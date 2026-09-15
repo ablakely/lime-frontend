@@ -4,6 +4,7 @@ const message = document.getElementById('message');
 const searchEmptyState = document.getElementById('search-empty-state');
 const breadcrumbs = document.getElementById('breadcrumbs');
 const pageSearchInput = document.getElementById('page-search');
+const themeToggleButton = document.getElementById('toggle-theme');
 const quickNavForm = document.getElementById('quick-nav-form');
 const quickNavSection = document.getElementById('quick-nav-section');
 const toggleQuickNavButton = document.getElementById('toggle-quick-nav');
@@ -27,6 +28,57 @@ const quickNavAutocompleteFields = {
   year: { input: quickYear, menu: quickYearMenu, getOptions: () => cachedYears },
   model: { input: quickModel, menu: quickModelMenu, getOptions: () => cachedModels }
 };
+
+const THEME_STORAGE_KEY = 'lime.theme';
+
+function getPreferredTheme() {
+  try {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (storedTheme === 'dark' || storedTheme === 'light') {
+      return storedTheme;
+    }
+  } catch (_) {
+  }
+
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+
+  return 'light';
+}
+
+function updateThemeToggleState(theme) {
+  if (!themeToggleButton) {
+    return;
+  }
+
+  const isDarkMode = theme === 'dark';
+  const nextModeLabel = isDarkMode ? 'light' : 'dark';
+
+  themeToggleButton.setAttribute('aria-pressed', String(isDarkMode));
+  themeToggleButton.setAttribute('aria-label', `Switch to ${nextModeLabel} mode`);
+  themeToggleButton.setAttribute('title', `Switch to ${nextModeLabel} mode`);
+  themeToggleButton.textContent = isDarkMode ? 'Light mode' : 'Dark mode';
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-bs-theme', theme);
+  updateThemeToggleState(theme);
+}
+
+function persistTheme(theme) {
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch (_) {
+  }
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+  const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  applyTheme(nextTheme);
+  persistTheme(nextTheme);
+}
 
 function updateQuickNavToggleState(isHidden) {
   toggleQuickNavButton.setAttribute('aria-pressed', String(isHidden));
@@ -928,6 +980,10 @@ if (pageSearchInput) {
   pageSearchInput.addEventListener('input', applyPageSearch);
 }
 
+if (themeToggleButton) {
+  themeToggleButton.addEventListener('click', toggleTheme);
+}
+
 Object.keys(quickNavAutocompleteFields).forEach(registerAutocompleteField);
 
 window.addEventListener('click', (event) => {
@@ -939,6 +995,8 @@ window.addEventListener('click', (event) => {
 });
 
 async function initializeApp() {
+  applyTheme(getPreferredTheme());
+
   if (typeof feather !== 'undefined') {
     feather.replace();
   }
