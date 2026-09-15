@@ -13,36 +13,38 @@
     <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-      <div class="container d-flex flex-wrap align-items-center gap-2">
-        <a class="navbar-brand" href="/">LIME Manuals</a>
-        <div class="navbar-search flex-grow-1">
-          <input
-            id="page-search"
-            type="search"
-            class="form-control form-control-sm"
-            placeholder="Filter this page"
-            aria-label="Filter items on this page"
-            autocomplete="off"
-          />
+    <header class="container pt-3">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm app-navbar">
+        <div class="container d-flex flex-wrap align-items-center gap-2">
+          <a class="navbar-brand" href="/">LIME Manuals</a>
+          <div class="navbar-search flex-grow-1">
+            <input
+              id="page-search"
+              type="search"
+              class="form-control form-control-sm"
+              placeholder="Filter this page"
+              aria-label="Filter items on this page"
+              autocomplete="off"
+            />
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <a href="/" class="btn btn-outline-light btn-sm nav-icon-btn" aria-label="Home" title="Home">
+              <i data-feather="home"></i>
+            </a>
+            <button
+              id="toggle-quick-nav"
+              type="button"
+              class="btn btn-outline-light btn-sm nav-icon-btn"
+              aria-label="Hide manual finder"
+              aria-pressed="false"
+              title="Hide manual finder"
+            >
+              <i data-feather="eye-off"></i>
+            </button>
+          </div>
         </div>
-        <div class="d-flex align-items-center gap-2">
-          <a href="/" class="btn btn-outline-light btn-sm nav-icon-btn" aria-label="Home" title="Home">
-            <i data-feather="home"></i>
-          </a>
-          <button
-            id="toggle-quick-nav"
-            type="button"
-            class="btn btn-outline-light btn-sm nav-icon-btn"
-            aria-label="Hide manual finder"
-            aria-pressed="false"
-            title="Hide manual finder"
-          >
-            <i data-feather="eye-off"></i>
-          </button>
-        </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
 
     <main class="container py-4">
       <section id="quick-nav-section" class="card shadow-sm mb-4">
