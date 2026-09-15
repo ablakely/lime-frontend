@@ -23,6 +23,20 @@ function updateQuickNavToggleState(isHidden) {
   toggleQuickNavButton.setAttribute('title', isHidden ? 'Show manual finder' : 'Hide manual finder');
 }
 
+function syncQuickNavForRoute(parts) {
+  if (!toggleQuickNavButton || !quickNavSection) {
+    return;
+  }
+
+  const isHomePage = parts.length === 0;
+  if (isHomePage) {
+    quickNavSection.classList.remove('d-none');
+  }
+
+  toggleQuickNavButton.classList.toggle('d-none', isHomePage);
+  updateQuickNavToggleState(quickNavSection.classList.contains('d-none'));
+}
+
 function showLoading(show) {
   loading.classList.toggle('d-none', !show);
 }
@@ -429,6 +443,7 @@ async function refreshModelOptions() {
 
 async function renderRoute() {
   const { rawParts, decodedParts: parts } = window.routeUtils.parsePathname(window.location.pathname);
+  syncQuickNavForRoute(parts);
   showMessage('');
   showLoading(true);
   content.innerHTML = '';
@@ -638,10 +653,6 @@ if (pageSearchInput) {
 async function initializeApp() {
   if (typeof feather !== 'undefined') {
     feather.replace();
-  }
-
-  if (toggleQuickNavButton && quickNavSection) {
-    updateQuickNavToggleState(quickNavSection.classList.contains('d-none'));
   }
 
   let hydrationErrorMessage = '';
