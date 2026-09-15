@@ -136,7 +136,21 @@ function renderManualListing(data) {
     const list = document.createElement('div');
     list.className = 'list-group';
 
+    var sections = [];
+
     data.manuals.forEach(({ name, uri }) => {
+      const urisplit = uri.split('/');
+      const section = decodeURIComponent(urisplit[urisplit.length - 3]);
+
+      if (sections.indexOf(section) == -1) {
+          const header = document.createElement('li');
+          header.className = 'list-group-item list-group-item-dark';
+          header.textContent = section;
+          list.appendChild(header);
+
+          sections.push(section);
+      }
+
       const link = document.createElement('a');
       link.className = 'list-group-item list-group-item-action';
       link.href = uri;
@@ -146,17 +160,26 @@ function renderManualListing(data) {
 
     body.appendChild(list);
   } else {
-    body.appendChild(renderEmptyState('No manuals available at this level.'));
+      window.location.href += 'index.html';
   }
 
   section.appendChild(body);
   return section;
 }
 
+function renderiFrame(uri) {
+    const iframe = document.createElement('iframe');
+    iframe.src = uri;
+    return iframe;
+}
+
 function renderManualHtml(html) {
   const article = document.createElement('article');
+  const $page = $('<div>').html(html).find('.main');
+
   article.className = 'manual-content';
-  article.innerHTML = html;
+  
+  article.innerHTML = $page.html();
   return article;
 }
 

@@ -16,6 +16,7 @@ async function fetchManual(path) {
 }
 
 window.lemonApi = {
+  getHtml: (uri) => fetchManual(uri),
   getMakes: () => fetchJson('/api/makes'),
   getYears: (make) => fetchJson(`/api/${encodeURIComponent(make)}`),
   getModels: (make, year) => fetchJson(`/api/${encodeURIComponent(make)}/${encodeURIComponent(year)}`),
