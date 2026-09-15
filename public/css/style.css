@@ -27,6 +27,12 @@ body {
   padding: 1rem;
 }
 
+.manual-content img {
+  max-width: 100%;
+  height: auto;
+  cursor: zoom-in;
+}
+
 .nav-icon-btn {
   line-height: 1;
 }

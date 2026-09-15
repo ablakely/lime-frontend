@@ -229,7 +229,7 @@ function applyPageSearch() {
   setSearchEmptyState('');
 }
 
-function renderManualListing(data) {
+function renderManualListing(data, rawParts) {
   const section = document.createElement('section');
   section.className = 'card shadow-sm';
 
@@ -284,7 +284,7 @@ function renderManualListing(data) {
     body.appendChild(list);
   } else {
     if (data.content) {
-        body.appendChild(renderHtml(data.content));
+        body.appendChild(renderHtml(data.content, rawParts));
     } else {
         body.appendChild(renderEmptyState('No manuals were found for this path.'));
     }
@@ -300,22 +300,16 @@ function renderiFrame(uri) {
     return iframe;
 }
 
-function rewriteManualImageUrls(rootElement, rawParts) {
-  rootElement.querySelectorAll('img[src]').forEach((image) => {
-    const source = image.getAttribute('src');
-    image.setAttribute('src', window.manualUrl.toManualProxyUrl(source, rawParts));
-  });
-}
-
-function renderHtml(html) {
+function renderHtml(html, rawParts) {
     const article = document.createElement('article');
 
     const $html = $(html);
 
     $html.find('table').addClass('table table-striped');
 
-    article.classname = 'manual-content';
+    article.className = 'manual-content';
     article.innerHTML = $html.html();
+    window.manualImages.rewriteManualImageUrls(article, rawParts);
 
     return article;
 }
@@ -328,6 +322,7 @@ function renderManualHtml(html, rawParts) {
   $page.find('table').addClass('table table-striped');
   
   article.innerHTML = $page.html();
+  window.manualImages.rewriteManualImageUrls(article, rawParts);
   return article;
 }
 
@@ -751,7 +746,7 @@ async function renderRoute() {
           path: crumb.href
         }))
       );
-      content.appendChild(renderManualListing(data.data));
+      content.appendChild(renderManualListing(data.data, rawParts));
       return;
     }
 
@@ -775,6 +770,16 @@ async function renderRoute() {
 }
 
 window.addEventListener('click', (event) => {
+  const image = event.target.closest('.manual-content img[src]');
+  if (image) {
+    const imageUrl = window.manualImages.getImageOpenUrl(image);
+    if (imageUrl) {
+      event.preventDefault();
+      window.open(imageUrl, '_blank', 'noopener');
+    }
+    return;
+  }
+
   const link = event.target.closest('a[href^="/"]');
   if (!link || link.target === '_blank' || link.hasAttribute('download')) {
     return;
