@@ -254,9 +254,7 @@ function loadAppModule() {
 test('selecting a make suggestion focuses the year input after loading years', async () => {
   const { app, document } = loadAppModule();
 
-  app.selectAutocompleteSuggestion('make', 'Ford');
-  await Promise.resolve();
-  await Promise.resolve();
+  await app.selectAutocompleteSuggestion('make', 'Ford');
 
   assert.equal(app.quickMake.value, 'Ford');
   assert.deepEqual(app.getCachedYears(), ['2024', '2023']);
@@ -268,9 +266,7 @@ test('selecting a year suggestion focuses the model input after loading models',
   const { app, document } = loadAppModule();
   app.quickMake.value = 'Ford';
 
-  app.selectAutocompleteSuggestion('year', '2024');
-  await Promise.resolve();
-  await Promise.resolve();
+  await app.selectAutocompleteSuggestion('year', '2024');
 
   assert.equal(app.quickYear.value, '2024');
   assert.deepEqual(app.getCachedModels(), ['F-150 XL']);

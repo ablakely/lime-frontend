@@ -733,17 +733,18 @@ function selectAutocompleteSuggestion(fieldName, value) {
   hideAutocompleteMenu(field.menu);
 
   if (fieldName === 'make') {
-    refreshYearOptions()
+    return refreshYearOptions()
       .then(() => focusQuickNavField('year'))
       .catch((error) => showMessage(error.message));
-    return;
   }
 
   if (fieldName === 'year') {
-    refreshModelOptions()
+    return refreshModelOptions()
       .then(() => focusQuickNavField('model'))
       .catch((error) => showMessage(error.message));
   }
+
+  return Promise.resolve();
 }
 
 function registerAutocompleteField(fieldName) {
