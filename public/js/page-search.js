@@ -23,11 +23,19 @@
 
     const visibility = items.map(() => false);
     let currentHeaderIndex = -1;
+    let sectionHeaderMatches = false;
     let sectionHasVisibleItems = false;
+    let sectionItemIndices = [];
 
     function commitHeaderVisibility() {
       if (currentHeaderIndex >= 0) {
-        visibility[currentHeaderIndex] = sectionHasVisibleItems;
+        visibility[currentHeaderIndex] = sectionHeaderMatches || sectionHasVisibleItems;
+
+        if (sectionHeaderMatches) {
+          sectionItemIndices.forEach((itemIndex) => {
+            visibility[itemIndex] = true;
+          });
+        }
       }
     }
 
@@ -35,15 +43,21 @@
       if (item.kind === 'header') {
         commitHeaderVisibility();
         currentHeaderIndex = index;
+        sectionHeaderMatches = matchesSearchQuery(item.text, normalizedQuery);
         sectionHasVisibleItems = false;
+        sectionItemIndices = [];
         return;
       }
 
-      const isVisible = matchesSearchQuery(item.text, normalizedQuery);
+      const isVisible = sectionHeaderMatches || matchesSearchQuery(item.text, normalizedQuery);
       visibility[index] = isVisible;
 
-      if (currentHeaderIndex >= 0 && isVisible) {
-        sectionHasVisibleItems = true;
+      if (currentHeaderIndex >= 0) {
+        sectionItemIndices.push(index);
+
+        if (isVisible) {
+          sectionHasVisibleItems = true;
+        }
       }
     });
 

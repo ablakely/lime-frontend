@@ -23,6 +23,19 @@ test('filterGroupedItems hides section headers without matching items', () => {
   assert.deepEqual(visibility, [true, false, true, false, false]);
 });
 
+test('filterGroupedItems shows a full section when its header matches the query', () => {
+  const visibility = filterGroupedItems([
+    { kind: 'header', text: 'Repair' },
+    { kind: 'item', text: 'Brakes' },
+    { kind: 'item', text: 'Engine' },
+    { kind: 'header', text: 'Specifications' },
+    { kind: 'item', text: 'Dimensions' },
+    { kind: 'item', text: 'Capacities' }
+  ], 'spec');
+
+  assert.deepEqual(visibility, [false, false, false, true, true, true]);
+});
+
 test('filterGroupedItems shows every entry when query is empty', () => {
   const visibility = filterGroupedItems([
     { kind: 'header', text: 'Repair' },
