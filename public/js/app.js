@@ -3,6 +3,8 @@ const loading = document.getElementById('loading');
 const message = document.getElementById('message');
 const breadcrumbs = document.getElementById('breadcrumbs');
 const quickNavForm = document.getElementById('quick-nav-form');
+const quickNavSection = document.getElementById('quick-nav-section');
+const toggleQuickNavButton = document.getElementById('toggle-quick-nav');
 const quickMake = document.getElementById('quick-make');
 const quickYear = document.getElementById('quick-year');
 const quickModel = document.getElementById('quick-model');
@@ -12,6 +14,12 @@ const modelOptions = document.getElementById('model-options');
 
 let cachedMakes = [];
 let makesHydrationPromise = null;
+
+function updateQuickNavToggleState(isHidden) {
+  toggleQuickNavButton.setAttribute('aria-pressed', String(isHidden));
+  toggleQuickNavButton.setAttribute('aria-label', isHidden ? 'Show manual finder' : 'Hide manual finder');
+  toggleQuickNavButton.setAttribute('title', isHidden ? 'Show manual finder' : 'Hide manual finder');
+}
 
 function showLoading(show) {
   loading.classList.toggle('d-none', !show);
@@ -534,7 +542,22 @@ quickNavForm.addEventListener('submit', (event) => {
   renderRoute();
 });
 
+if (toggleQuickNavButton && quickNavSection) {
+  toggleQuickNavButton.addEventListener('click', () => {
+    const isHidden = quickNavSection.classList.toggle('d-none');
+    updateQuickNavToggleState(isHidden);
+  });
+}
+
 async function initializeApp() {
+  if (typeof feather !== 'undefined') {
+    feather.replace();
+  }
+
+  if (toggleQuickNavButton && quickNavSection) {
+    updateQuickNavToggleState(quickNavSection.classList.contains('d-none'));
+  }
+
   let hydrationErrorMessage = '';
   try {
     await hydrateMakesIfNeeded();
