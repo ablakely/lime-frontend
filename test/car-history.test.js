@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { loadHistory, saveSelection, toHistoryLabel } = require('../public/js/car-history.js');
+const { clearHistory, loadHistory, saveSelection, toHistoryLabel } = require('../public/js/car-history.js');
 
 function createStorage(initialValue) {
   const state = {};
@@ -14,6 +14,9 @@ function createStorage(initialValue) {
     },
     setItem(key, value) {
       state[key] = value;
+    },
+    removeItem(key) {
+      delete state[key];
     }
   };
 }
@@ -41,6 +44,17 @@ test('saveSelection prepends, deduplicates, and persists recent cars', () => {
     storage.getItem('lime.quickNavHistory'),
     JSON.stringify(history)
   );
+});
+
+test('clearHistory removes persisted quick nav history', () => {
+  const storage = createStorage(
+    JSON.stringify([{ make: 'Ford', year: '2020', model: 'F-150' }])
+  );
+
+  const history = clearHistory(storage);
+
+  assert.deepEqual(history, []);
+  assert.equal(storage.getItem('lime.quickNavHistory'), null);
 });
 
 test('toHistoryLabel joins the selected car parts', () => {

@@ -41,6 +41,24 @@ body {
   min-width: min(100%, 16rem);
 }
 
+.quick-nav-autocomplete {
+  position: relative;
+}
+
+.quick-nav-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  z-index: 1030;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.quick-nav-menu .list-group-item {
+  cursor: pointer;
+}
+
 @media (min-width: 992px) {
   .navbar-search {
     max-width: 22rem;
