@@ -90,7 +90,7 @@ function cardList(items) {
   const row = document.createElement('div');
   row.className = 'row g-3 card-list';
 
-  items.forEach(({ title, href, subtitle }) => {
+  items.forEach(({ title, href, subtitle, badge }) => {
     const col = document.createElement('div');
     col.className = 'col-12 col-md-6 col-lg-4';
     const link = document.createElement('a');
@@ -105,7 +105,19 @@ function cardList(items) {
     const heading = document.createElement('h2');
     heading.className = 'h5 card-title mb-1';
     heading.textContent = title;
+
+    if (badge) {
+        const b = document.createElement('span');
+        if (badge == 'lemon') {
+            b.className = 'badge rounded-pill bg-warning';
+        } else {
+            b.className = 'badge rounded-pill bg-info';
+        }
+        b.textContent = badge;
+        heading.appendChild(b)
+    }
     body.appendChild(heading);
+
 
     if (subtitle) {
       const note = document.createElement('p');
@@ -447,11 +459,14 @@ async function renderRoute() {
   showMessage('');
   showLoading(true);
   content.innerHTML = '';
+  $("#page-search").val('');
+  applyPageSearch();
 
   try {
     if (parts.length === 0) {
       setBreadcrumbs([]);
       const makes = (await hydrateMakesIfNeeded()).map((make) => ({ make }));
+      
       content.appendChild(
         cardList(
           makes.map(({ make }) => ({
@@ -467,7 +482,7 @@ async function renderRoute() {
       const [make] = parts;
       setBreadcrumbs([{ label: make, path: `/${encodeURIComponent(make)}` }]);
       const data = await window.lemonApi.getYears(make);
-      const years = extractYears(data).map((year) => ({ year }));
+      const years = extractYears(data).map((year) => ({ year })).reverse();
       content.appendChild(
         cardList(
           years.map(({ year }) => ({
@@ -505,6 +520,7 @@ async function renderRoute() {
 
             modelCards.push({
               subtitle: subtitle,
+              badge: engine.database,
               title: title,
               href: `/${encodeURIComponent(make)}/${encodeURIComponent(year)}/${encodeURIComponent(title + ' ' + subtitle)}`
             });
