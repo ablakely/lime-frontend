@@ -154,7 +154,7 @@ function applyGroupedListSearch(query) {
   content.querySelectorAll('.list-group').forEach((list) => {
     const children = Array.from(list.children);
     const definitions = children.map((child) => ({
-      kind: child.tagName === 'LI' ? 'header' : 'item',
+      kind: child.tagName === 'LI' && child.classList.contains('list-group-item-dark') ? 'header' : 'item',
       text: child.textContent
     }));
     const visibility = window.pageSearch.filterGroupedItems(definitions, query);
