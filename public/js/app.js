@@ -783,10 +783,11 @@ window.addEventListener('click', (event) => {
   if (event.target.closest('.card-list')) {
     const destinationPath = new URL(link.href, window.location.origin).pathname;
     const { decodedParts } = window.routeUtils.parsePathname(destinationPath);
-    if (decodedParts.length > 0 && decodedParts.length <= 3) {
-      const [make = '', year = ''] = decodedParts;
-      const model = decodedParts.slice(2).join('/');
-      saveQuickNavHistory({ make, year, model });
+    if (decodedParts.length === 3) {
+      const [make = '', year = '', model = ''] = decodedParts;
+      if (model.trim()) {
+        saveQuickNavHistory({ make, year, model });
+      }
     }
   }
 
