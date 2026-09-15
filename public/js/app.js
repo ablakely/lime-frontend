@@ -39,9 +39,10 @@ function syncQuickNavForRoute(parts) {
     return;
   }
 
-  quickNavSection.classList.add('d-none');
+  const showQuickNavByDefault = window.routeUtils.shouldShowQuickNavByDefault(parts);
+  quickNavSection.classList.toggle('d-none', !showQuickNavByDefault);
   toggleQuickNavButton.classList.remove('d-none');
-  updateQuickNavToggleState(true);
+  updateQuickNavToggleState(!showQuickNavByDefault);
   resetQuickNavForm();
 }
 

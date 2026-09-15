@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parsePathname } = require('../public/js/route-utils.js');
+const { parsePathname, shouldShowQuickNavByDefault } = require('../public/js/route-utils.js');
 
 test('parsePathname handles home route', () => {
   const parsed = parsePathname('/');
@@ -48,4 +48,10 @@ test('parsePathname preserves deep encoded segments for manual navigation', () =
     'Cab & Chassis C3500, 2D Pickup, 6.5 F, Automatic',
     'Repair and Diagnosis'
   ]);
+});
+
+test('shouldShowQuickNavByDefault only enables the selector on the home route', () => {
+  assert.equal(shouldShowQuickNavByDefault([]), true);
+  assert.equal(shouldShowQuickNavByDefault(['Buick']), false);
+  assert.equal(shouldShowQuickNavByDefault(['Buick', '2012', 'LaCrosse']), false);
 });
