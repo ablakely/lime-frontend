@@ -160,7 +160,7 @@ function renderManualListing(data) {
 
     body.appendChild(list);
   } else {
-      window.location.href += 'index.html';
+    body.appendChild(renderEmptyState('No manuals were found for this path.'));
   }
 
   section.appendChild(body);
@@ -173,13 +173,50 @@ function renderiFrame(uri) {
     return iframe;
 }
 
-function renderManualHtml(html) {
+function getManualProxyBasePath(rawParts) {
+  const proxyPath = `/api/manual/${rawParts.join('/')}`;
+  if (proxyPath.endsWith('/')) {
+    return proxyPath;
+  }
+
+  const lastSegment = rawParts.length > 0 ? decodeURIComponent(rawParts[rawParts.length - 1]) : '';
+  if (/\.[a-z0-9]+$/i.test(lastSegment)) {
+    return proxyPath.slice(0, proxyPath.lastIndexOf('/') + 1);
+  }
+
+  return `${proxyPath}/`;
+}
+
+function toManualProxyUrl(value, rawParts) {
+  if (!value || value.startsWith('data:') || value.startsWith('blob:') || value.startsWith('#')) {
+    return value;
+  }
+
+  if (/^[a-z][a-z0-9+.-]*:/i.test(value) || value.startsWith('//') || value.startsWith('/api/manual/')) {
+    return value;
+  }
+
+  const basePath = getManualProxyBasePath(rawParts);
+  const manualOrigin = 'https://manual.local';
+  const resolved = new URL(value, `${manualOrigin}${basePath}`);
+  return `/api/manual${resolved.pathname}${resolved.search}${resolved.hash}`;
+}
+
+function rewriteManualImageUrls(rootElement, rawParts) {
+  rootElement.querySelectorAll('img[src]').forEach((image) => {
+    const source = image.getAttribute('src');
+    image.setAttribute('src', toManualProxyUrl(source, rawParts));
+  });
+}
+
+function renderManualHtml(html, rawParts) {
   const article = document.createElement('article');
   const $page = $('<div>').html(html).find('.main');
 
   article.className = 'manual-content';
   
   article.innerHTML = $page.html();
+  rewriteManualImageUrls(article, rawParts);
   return article;
 }
 
@@ -417,7 +454,7 @@ async function renderRoute() {
     setBreadcrumbs(manualBreadcrumbs);
 
     if (data.kind === 'html') {
-      content.appendChild(renderManualHtml(data.data));
+      content.appendChild(renderManualHtml(data.data, rawParts));
       return;
     }
 

@@ -12,7 +12,22 @@ async function fetchJson(path) {
 
 async function fetchManual(path) {
   const response = await fetch(path);
-  return window.manualResponse.parseManualApiResponse(response);
+  const parsedResponse = await window.manualResponse.parseManualApiResponse(response);
+
+  if (
+    parsedResponse.kind === 'directory' &&
+    Array.isArray(parsedResponse.data.manuals) &&
+    parsedResponse.data.manuals.length === 0
+  ) {
+    const indexPath = path.endsWith('/') ? `${path}index.html` : `${path}/index.html`;
+    const indexResponse = await fetch(indexPath);
+
+    if (indexResponse.ok) {
+      return window.manualResponse.parseManualApiResponse(indexResponse);
+    }
+  }
+
+  return parsedResponse;
 }
 
 window.lemonApi = {
