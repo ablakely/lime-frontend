@@ -112,7 +112,7 @@ test('manual api route preserves binary image responses', async (t) => {
   const imageBytes = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 255, 17, 34]);
 
   global.fetch = async (url, options) => {
-    assert.equal(url, 'http://localhost:8080/images25/example.png');
+    assert.equal(url, 'http://localhost:8080/images25/assets/example.png');
     assert.equal(options.headers.Accept, 'text/html, application/json');
 
     return new Response(imageBytes, {
@@ -127,7 +127,7 @@ test('manual api route preserves binary image responses', async (t) => {
     server.close();
   });
 
-  const response = await realFetch(`http://127.0.0.1:${server.address().port}/api/manual/images25/example.png`);
+  const response = await realFetch(`http://127.0.0.1:${server.address().port}/api/manual/images25/assets/example.png`);
 
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('content-type'), 'image/png');
