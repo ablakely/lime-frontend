@@ -837,14 +837,20 @@ async function renderRoute() {
 
         if (entry.model && Array.isArray(entry.engines) && entry.engines.length > 0) {
           entry.engines.forEach((engine) => {
-            const subtitle = engine.name || entry.model;
-            const title = entry.model !== subtitle ? entry.model : ''; 
+            var subtitle = engine.name || entry.model;
+            var title = entry.model !== subtitle ? entry.model : ''; 
+            var uriend = title !== '' ? `${title} ${subtitle}` : subtitle;
+
+            if (title === '') {
+                title = subtitle;
+                subtitle = '';
+            }
 
             modelCards.push({
               subtitle: subtitle,
               badge: engine.database,
               title: title,
-              href: `/${encodeURIComponent(make)}/${encodeURIComponent(year)}/${encodeURIComponent(title + ' ' + subtitle)}`
+              href: `/${encodeURIComponent(make)}/${encodeURIComponent(year)}/${encodeURIComponent(uriend)}`
             });
           });
           return;
