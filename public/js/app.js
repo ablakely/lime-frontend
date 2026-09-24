@@ -4,6 +4,7 @@ const message = document.getElementById('message');
 const searchEmptyState = document.getElementById('search-empty-state');
 const breadcrumbs = document.getElementById('breadcrumbs');
 const pageSearchInput = document.getElementById('page-search');
+const pageSearchHistoryList = document.getElementById('page-search-history');
 const themeToggleButton = document.getElementById('toggle-theme');
 const quickNavForm = document.getElementById('quick-nav-form');
 const quickNavSection = document.getElementById('quick-nav-section');
@@ -19,6 +20,7 @@ const quickModelMenu = document.getElementById('quick-model-menu');
 
 let cachedMakes = [];
 let makesHydrationPromise = null;
+let pageSearchHistoryEntries = [];
 let quickNavHistoryEntries = [];
 let cachedYears = [];
 let cachedModels = [];
@@ -329,6 +331,37 @@ function applyPageSearch() {
   }
 
   setSearchEmptyState('');
+}
+
+function renderPageSearchHistory() {
+  if (!pageSearchHistoryList) {
+    return;
+  }
+
+  pageSearchHistoryList.innerHTML = '';
+  pageSearchHistoryEntries.forEach((entry) => {
+    const option = document.createElement('option');
+    option.value = entry;
+    pageSearchHistoryList.appendChild(option);
+  });
+}
+
+function loadPageSearchHistory() {
+  if (!window.pageSearchHistory) {
+    return;
+  }
+
+  pageSearchHistoryEntries = window.pageSearchHistory.loadHistory(window.localStorage);
+  renderPageSearchHistory();
+}
+
+function savePageSearchHistory(query) {
+  if (!window.pageSearchHistory) {
+    return;
+  }
+
+  pageSearchHistoryEntries = window.pageSearchHistory.saveQuery(window.localStorage, query);
+  renderPageSearchHistory();
 }
 
 function renderManualListing(data, rawParts) {
@@ -781,6 +814,7 @@ async function renderRoute() {
   showMessage('');
   showLoading(true);
   content.innerHTML = '';
+  savePageSearchHistory(pageSearchInput ? pageSearchInput.value : '');
   $("#page-search").val('');
   applyPageSearch();
 
@@ -1018,6 +1052,12 @@ if (clearQuickHistoryButton) {
 
 if (pageSearchInput) {
   pageSearchInput.addEventListener('input', applyPageSearch);
+  pageSearchInput.addEventListener('change', () => savePageSearchHistory(pageSearchInput.value));
+  pageSearchInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      savePageSearchHistory(pageSearchInput.value);
+    }
+  });
 }
 
 if (themeToggleButton) {
@@ -1042,6 +1082,7 @@ async function initializeApp() {
   }
 
   loadQuickNavHistory();
+  loadPageSearchHistory();
 
   let hydrationErrorMessage = '';
   try {
