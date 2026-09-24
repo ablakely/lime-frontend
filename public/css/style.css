@@ -48,6 +48,10 @@ body {
   min-width: min(100%, 16rem);
 }
 
+.navbar-search #page-search-history {
+  width: 100%;
+}
+
 .quick-nav-autocomplete {
   position: relative;
 }
