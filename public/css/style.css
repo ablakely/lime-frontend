@@ -75,3 +75,9 @@ body {
     max-width: 22rem;
   }
 }
+
+.manual-content img[src$=".svg" i],
+.manual-content img[src*=".svg?" i],
+.manual-content svg {
+  background-color: #fff;
+}
